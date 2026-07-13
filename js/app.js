@@ -45,7 +45,7 @@ function loadTabModule(tabName) {
         .then(() => { setupPdfWorker(); return import('./pdf.js'); })
         .catch(e => { console.error('PDF load failed', e); delete _tabLoads.pdf; });
     }
-  } else if (tabName === 'convert') {
+  } else if (tabName === 'convert' || tabName === 'files') {
     if (!_tabLoads.converter) {
       _tabLoads.converter = loadScripts(CONVERT_SCRIPTS)
         .then(() => { setupPdfWorker(); return import('./converter.js'); })
@@ -80,15 +80,19 @@ prefersLight.addEventListener('change', (e) => { isLightMode = e.matches; setThe
 /* --- Tab Management (with hash routing) --- */
 const tabButtons = document.querySelectorAll('.tab-btn');
 const siteNote = document.getElementById('siteNote');
-const fileBasedTabs = ['merge', 'reorder', 'convert'];
-const validTabs = Array.from(tabButtons).map(b => b.dataset.tab);
+const fileBasedTabs = ['merge', 'reorder', 'files'];
+const validTabs = ['home', 'units', 'files', ...Array.from(tabButtons).map(b => b.dataset.tab)];
 const DEFAULT_TAB = 'home';
+let convertView = 'units';
 
 // Renders a tab as active without touching the URL — used by both the hashchange
 // listener and the initial load, so the hash is always the single source of truth.
 function activateTab(tabName, focusInput) {
   if (!validTabs.includes(tabName)) tabName = DEFAULT_TAB;
-  tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+  const isConvertView = (tabName === 'units' || tabName === 'files');
+  if (isConvertView) convertView = (tabName === 'units') ? 'units' : 'files';
+  tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === (isConvertView ? 'convert' : tabName)));
+  document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.toggle('active', (isConvertView && i.dataset.convert === convertView)));
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.id !== 'tab-' + tabName);
   siteNote.hidden = !fileBasedTabs.includes(tabName);
   loadTabModule(tabName);
@@ -102,11 +106,22 @@ function activateTab(tabName, focusInput) {
 // an about:srcdoc preview iframe) disallow URL/History changes entirely — fall
 // back to just switching the panel so the tabs still work there.
 tabButtons.forEach(btn => btn.addEventListener('click', () => {
-  const tabName = btn.dataset.tab;
+  let tabName = btn.dataset.tab;
+  if (tabName === 'convert') tabName = (convertView === 'files') ? 'files' : 'units';
   if (location.hash.slice(1) === tabName) { activateTab(tabName, true); return; }
   try { location.hash = tabName; }
   catch (e) { activateTab(tabName, true); }
 }));
+
+document.querySelectorAll('.tab-dropdown-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const tabName = (item.dataset.convert === 'units') ? 'units' : 'files';
+    if (location.hash.slice(1) === tabName) { activateTab(tabName, true); return; }
+    try { location.hash = tabName; }
+    catch (e) { activateTab(tabName, true); }
+  });
+});
 
 document.querySelectorAll('.home-tile').forEach(tile => tile.addEventListener('click', () => {
   const tabName = tile.dataset.goto;
@@ -114,6 +129,14 @@ document.querySelectorAll('.home-tile').forEach(tile => tile.addEventListener('c
   try { location.hash = tabName; }
   catch (e) { activateTab(tabName, true); }
 }));
+
+const homeFab = document.getElementById('homeFab');
+function goHome() {
+  if (location.hash.slice(1) === 'home') { activateTab('home', false); return; }
+  try { location.hash = 'home'; }
+  catch (e) { activateTab('home', false); }
+}
+homeFab.addEventListener('click', goHome);
 
 window.addEventListener('hashchange', () => activateTab(location.hash.slice(1), true));
 

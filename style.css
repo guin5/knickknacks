@@ -191,6 +191,55 @@
   .tab-btn:hover { background: var(--accent-soft); color: var(--text); }
   .tab-btn.active { background: var(--accent); color: #fff; }
 
+  /* Convert dropdown (Units / Files) */
+  .tab-dropdown { position: relative; flex: none; }
+  .tab-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s;
+    z-index: 200;
+    min-width: 140px;
+  }
+  .tab-dropdown:hover .tab-dropdown-menu,
+  .tab-dropdown:focus-within .tab-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  .tab-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: background .15s, color .15s;
+  }
+  .tab-dropdown-item svg { width: 16px; height: 16px; flex: none; }
+  .tab-dropdown-item:hover { background: var(--accent-soft); color: var(--text); }
+  .tab-dropdown-item.active { color: var(--accent); }
+
   .tab-panel { display: block; }
   .tab-panel[hidden] { display: none; }
 
@@ -411,3 +460,29 @@
   .btn-speed { display: block; margin: 20px auto 0; padding: 10px 30px; font: inherit; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; color: #fff; background: var(--accent); border: none; border-radius: 10px; cursor: pointer; }
   .btn-speed:disabled { opacity: 0.7; cursor: not-allowed; }
   .site-note { text-align: center; font-size: 18px; font-weight: 300; letter-spacing: 0.3px; color: var(--muted); margin-top: 22px; }
+
+  /* Floating home button — bottom middle, visible on all tabs */
+  .home-fab {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    z-index: 1001;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .home-fab:hover { transform: translateX(-50%) scale(1.06); }
+  .home-fab:active { transform: translateX(-50%) scale(0.95); }
+  .home-fab svg { width: 24px; height: 24px; }
+  .tab-panel:has(.panel.fs-active) ~ .home-fab,
+  .home-fab[hidden] { display: none; }
