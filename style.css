@@ -538,6 +538,16 @@
       border: 1px solid transparent;
     }
     .tab-dropdown-item.active { background: var(--accent); color: #fff; }
+
+    /* Neutralize the desktop hover/focus dropdown transform — it shifts the
+       menu left and misroutes taps on touch (both the gap and wrong-tab bug). */
+    .tab-dropdown:hover .tab-dropdown-menu,
+    .tab-dropdown:focus-within .tab-dropdown-menu {
+      position: static;
+      transform: none;
+      opacity: 1;
+      visibility: visible;
+    }
   }
 
   /* --- Phones: scale down type and spacing so nothing overflows --- */
