@@ -4,8 +4,8 @@ document.querySelectorAll('.muteToggle').forEach(btn => {
     btn.addEventListener('click', () => {
         isMuted = !isMuted;
         document.querySelectorAll('.muteToggle').forEach(b => b.classList.toggle('muted', isMuted));
-        document.querySelectorAll('.icon-unmuted').forEach(el => el.hidden = isMuted);
-        document.querySelectorAll('.icon-muted').forEach(el => el.hidden = !isMuted);
+        document.querySelectorAll('.icon-unmuted').forEach(el => { isMuted ? el.setAttribute('hidden','') : el.removeAttribute('hidden'); });
+        document.querySelectorAll('.icon-muted').forEach(el => { !isMuted ? el.setAttribute('hidden','') : el.removeAttribute('hidden'); });
     });
 });
 

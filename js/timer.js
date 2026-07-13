@@ -2,15 +2,28 @@ import { ensureAudioContext, playBeep } from './audio.js';
 
 /* --- TIMER --- */
 try { (function() {
-  let rem = 0, intv, running = false, alarmInterval = null, permissionRequested = false;
+  let rem = 0, intv, running = false, alarmInterval = null, permissionRequested = false, fsTipTimer = null;
   const btn = document.getElementById('timerToggle'), tH = document.getElementById('tH'), tM = document.getElementById('tM'), tS = document.getElementById('tS');
   const tabTimer = document.getElementById('tab-timer');
   const timerInputs = document.getElementById('timerInputs');
+  const timerFsBtn = document.getElementById('timerFsBtn');
+  const timerFsTip = document.getElementById('timerFsTip');
+
+  function showFsTip() {
+    if (!timerFsTip) return;
+    timerFsTip.hidden = false;
+    clearTimeout(fsTipTimer);
+    fsTipTimer = setTimeout(() => { timerFsTip.hidden = true; }, 4000);
+  }
+
+  function hideFsTip() {
+    if (timerFsTip) timerFsTip.hidden = true;
+    clearTimeout(fsTipTimer);
+  }
 
   timerInputs.addEventListener('click', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     e.stopPropagation();
-    if (!running) tabTimer.classList.toggle('simple-mode');
+    if (running) { tabTimer.classList.toggle('simple-mode'); hideFsTip(); }
   });
   tabTimer.addEventListener('click', (e) => {
     if (tabTimer.classList.contains('simple-mode') && !timerInputs.contains(e.target) && !e.target.closest('.time-controls') && !e.target.closest('.controls-row')) {
@@ -38,6 +51,8 @@ try { (function() {
           tH.value = '00'; tM.value = '00'; tS.value = '00';
           playBeep(); alarmInterval = setInterval(playBeep, 1200);
           if ('Notification' in window && Notification.permission === 'granted') new Notification("Timer finished!");
+          if (timerFsBtn) timerFsBtn.disabled = true;
+          hideFsTip();
           return; 
       } 
       rem--; 
@@ -54,11 +69,15 @@ try { (function() {
 
       if(running) { 
           clearInterval(intv); btn.textContent = 'Resume'; running = false; setInputsReadonly(false);
+          if (timerFsBtn) timerFsBtn.disabled = true;
+          hideFsTip();
       } else {
           if(rem === 0) rem = parseInt(tH.value||0)*3600 + parseInt(tM.value||0)*60 + parseInt(tS.value||0);
           if(rem > 0) { 
               running = true; btn.textContent = 'Pause'; setInputsReadonly(true);
-              intv = setInterval(tk, 1000); 
+              intv = setInterval(tk, 1000);
+              if (timerFsBtn) timerFsBtn.disabled = false;
+              showFsTip();
           }
       }
   }
@@ -68,5 +87,7 @@ try { (function() {
       clearInterval(intv); if(alarmInterval) clearInterval(alarmInterval); alarmInterval = null;
       running = false; rem = 0; btn.textContent = 'Start'; setInputsReadonly(false);
       tH.value = '00'; tM.value = '00'; tS.value = '00';
+      if (timerFsBtn) timerFsBtn.disabled = true;
+      hideFsTip();
   });
 })(); } catch (e) { console.error('Timer failed to init', e); }

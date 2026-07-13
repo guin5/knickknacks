@@ -3,14 +3,27 @@ import { ensureAudioContext, playBeep } from './audio.js';
 /* --- ALARM --- */
 try { (function() {
     const h = document.getElementById('aH'), m = document.getElementById('aM'), ampm = document.getElementById('aAmPm'), btn = document.getElementById('alarmToggle');
-    let intv, active = false, ringing = false, ringIntv, permissionRequested = false;
+    let intv, active = false, ringing = false, ringIntv, permissionRequested = false, fsTipTimer = null;
     const tabAlarm = document.getElementById('tab-alarm');
     const alarmInputs = document.getElementById('alarmInputs');
+    const alarmFsBtn = document.getElementById('alarmFsBtn');
+    const alarmFsTip = document.getElementById('alarmFsTip');
+
+    function showFsTip() {
+        if (!alarmFsTip) return;
+        alarmFsTip.hidden = false;
+        clearTimeout(fsTipTimer);
+        fsTipTimer = setTimeout(() => { alarmFsTip.hidden = true; }, 4000);
+    }
+
+    function hideFsTip() {
+        if (alarmFsTip) alarmFsTip.hidden = true;
+        clearTimeout(fsTipTimer);
+    }
 
     alarmInputs.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         e.stopPropagation();
-        if (!active) tabAlarm.classList.toggle('simple-mode');
+        if (active) { tabAlarm.classList.toggle('simple-mode'); hideFsTip(); }
     });
     tabAlarm.addEventListener('click', (e) => {
         if (tabAlarm.classList.contains('simple-mode') && !alarmInputs.contains(e.target) && !e.target.closest('.time-controls') && !e.target.closest('.controls-row')) {
@@ -42,12 +55,18 @@ try { (function() {
         if (ringing) {
             clearInterval(ringIntv); ringing = false; active = false;
             btn.textContent = 'Set Alarm'; setInputsReadonly(false);
+            if (alarmFsBtn) alarmFsBtn.disabled = true;
+            hideFsTip();
         } else if (active) {
             clearInterval(intv); active = false;
             btn.textContent = 'Set Alarm'; setInputsReadonly(false);
+            if (alarmFsBtn) alarmFsBtn.disabled = true;
+            hideFsTip();
         } else {
             active = true; btn.textContent = 'Cancel Alarm'; setInputsReadonly(true);
             intv = setInterval(checkAlarm, 1000);
+            if (alarmFsBtn) alarmFsBtn.disabled = false;
+            showFsTip();
         }
     });
 })(); } catch (e) { console.error('Alarm failed to init', e); }

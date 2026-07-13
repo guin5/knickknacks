@@ -194,11 +194,11 @@
   .tab-panel { display: block; }
   .tab-panel[hidden] { display: none; }
 
-  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; max-width: 700px; margin: 0 auto; width: 100%; }
 
   /* --- Unit Converter Styles --- */
   .uc-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; padding-top: 20px; }
-  .palette { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 16px 64px rgba(0, 0, 0, 0.1); padding: 24px 32px; font-size: 48px; font-weight: 600; letter-spacing: 0.5px; display: flex; align-items: center; gap: 16px; transition: all 0.2s ease; width: max-content; }
+  .palette { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 16px 64px rgba(0, 0, 0, 0.1); padding: 24px 32px; font-size: 48px; font-weight: 600; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 16px; transition: all 0.2s ease; width: max-content; max-width: 100%; }
   .static-text { color: var(--muted); pointer-events: none; user-select: none; }
   .input-wrap { position: relative; display: inline-flex; }
   .measure { visibility: hidden; white-space: pre; min-width: 1ch; }
@@ -284,18 +284,18 @@
     font-family: "Pliant", sans-serif;
     font-size: 32px;
     font-weight: 600;
-    display: flex;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
     gap: 0px;
     cursor: pointer;
-    padding: 4px 16px;
+    padding: 4px 10px;
     border-radius: 12px;
     transition: background .15s;
   }
   .clock-edit-group:hover { background: var(--accent-soft); }
   .clock-edit-group input {
-    width: 60px;
+    width: 2.5ch;
     font: inherit;
     background: transparent;
     border: none;
@@ -317,8 +317,9 @@
     color: var(--accent);
     text-decoration: underline;
   }
-  .clock-edit-group input:disabled { color: var(--text); text-decoration: none; }
+  .clock-edit-group input:disabled { color: var(--text); text-decoration: none; pointer-events: none; }
   
+  .fs-tip { color: var(--ghost); font-size: 14px; font-weight: 300; margin: 8px 0 0; letter-spacing: 0.3px; text-align: center; user-select: none; }
   .clock-date { color: var(--muted); margin: 8px 0 24px; font-size: 18px; font-weight: 300; }
   .clock-world { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; }
   .world-chip { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: background .15s; }
@@ -335,25 +336,24 @@
   .panel.fs-active {
     position: fixed !important; top: 0 !important; left: 0 !important;
     width: 100vw !important; height: 100vh !important; z-index: 1000 !important;
-    background: var(--bg) !important; border: none !important; border-radius: 0 !important;
+    background: var(--bg) !important; border: none !important; border-radius: 0 !important; max-width: none !important;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: visible;
   }
-  .panel.fs-active .clock-big, .panel.fs-active .clock-edit-group { font-size: 15vw; }
-  .panel.fs-active .clock-edit-group input { width: 12vw; }
-  .panel.fs-active .clock-edit-group .ampm-select { font-size: 5vw; }
-  .panel.fs-active .clock-date, .panel.fs-active .clock-world, .panel.fs-active .lap-list { display: none; }
+  .panel.fs-active .clock-big, .panel.fs-active .clock-edit-group { font-size: min(15vw, 25vh, 200px); }
+  .panel.fs-active .clock-edit-group .ampm-select { font-size: min(5vw, 8vh, 64px); }
+  .panel.fs-active .clock-date, .panel.fs-active .clock-world, .panel.fs-active .lap-list, .panel.fs-active .fs-tip { display: none; }
   .panel.fs-active .clock-zone { display: block; font-size: 1.4vw; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
   .panel.fs-active .time-controls { position: fixed; top: 32px; right: 32px; }
 
   /* Simple mode expansions */
   .simple-mode:not([hidden]) { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 1000; }
   .simple-mode .panel { border: none; background: transparent; padding: 0; box-shadow: none; display: flex; flex-direction: column; align-items: center; }
-  .simple-mode .clock-date, .simple-mode .clock-world, .simple-mode .controls-row, .simple-mode .input-row, .simple-mode .lap-list, .simple-mode .time-controls { display: none; }
+  .simple-mode .clock-date, .simple-mode .clock-world, .simple-mode .controls-row, .simple-mode .input-row, .simple-mode .lap-list, .simple-mode .time-controls, .simple-mode .fs-tip { display: none; }
   .simple-mode .clock-zone { display: block; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
-  .simple-mode .clock-big { font-size: 12vw; }
-  .simple-mode .clock-edit-group { font-size: 12vw; }
-  .simple-mode .clock-edit-group input { width: 12vw; }
-  .simple-mode .clock-edit-group .ampm-select { font-size: 5vw; }
+  .simple-mode .clock-big { font-size: min(12vw, 20vh, 160px); }
+  .simple-mode .clock-edit-group { font-size: min(12vw, 20vh, 160px); }
+  .simple-mode .clock-edit-group .ampm-select { font-size: min(5vw, 8vh, 64px); }
 
   /* Speed tab */
   .speed-panel { text-align: center; }
