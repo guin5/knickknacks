@@ -95,7 +95,12 @@ function activateTab(tabName, focusInput) {
   if (!validTabs.includes(tabName)) tabName = DEFAULT_TAB;
   const isConvertView = (tabName === 'units' || tabName === 'files');
   if (isConvertView) convertView = (tabName === 'units') ? 'units' : 'files';
-  tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === (isConvertView ? 'convert' : tabName)));
+  tabButtons.forEach(b => {
+    const match = isConvertView
+      ? (b.dataset.tab === 'convert' || b.dataset.tab === convertView)
+      : b.dataset.tab === tabName;
+    b.classList.toggle('active', match);
+  });
   document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.toggle('active', (isConvertView && i.dataset.convert === convertView)));
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.id !== 'tab-' + tabName);
   siteNote.hidden = !fileBasedTabs.includes(tabName);

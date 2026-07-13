@@ -190,6 +190,7 @@
   .tab-btn svg { width: 16px; height: 16px; flex: none; }
   .tab-btn:hover { background: var(--accent-soft); color: var(--text); }
   .tab-btn.active { background: var(--accent); color: #fff; }
+  .tab-btn.mobile-only { display: none; }
 
   /* Convert dropdown (Units / Files) */
   .tab-dropdown { position: relative; flex: none; }
@@ -515,39 +516,10 @@
     .tabbar::-webkit-scrollbar { display: none; }
     .tab-btn { flex: 0 0 auto; scroll-snap-align: start; }
 
-    /* Unroll the Convert dropdown into inline tabs so "Files" is reachable
-       without hover (touch devices never fire :hover). */
-    .tab-dropdown { display: inline-flex; }
-    .tab-dropdown > .tab-btn { display: none; }
-    .tab-dropdown-menu {
-      position: static;
-      opacity: 1;
-      visibility: visible;
-      transform: none;
-      flex-direction: row;
-      gap: 4px;
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      padding: 0;
-      min-width: 0;
-    }
-    .tab-dropdown-item {
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-    }
-    .tab-dropdown-item.active { background: var(--accent); color: #fff; }
-
-    /* Neutralize the desktop hover/focus dropdown transform — it shifts the
-       menu left and misroutes taps on touch (both the gap and wrong-tab bug). */
-    .tab-dropdown:hover .tab-dropdown-menu,
-    .tab-dropdown:focus-within .tab-dropdown-menu {
-      position: static;
-      transform: none;
-      opacity: 1;
-      visibility: visible;
-    }
+    /* On phones, drop the desktop Convert dropdown entirely and show Units /
+       Files as their own tabs (added in the markup with .mobile-only). */
+    .tab-dropdown { display: none; }
+    .tab-btn.mobile-only { display: inline-flex; }
   }
 
   /* --- Phones: scale down type and spacing so nothing overflows --- */
