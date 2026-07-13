@@ -349,6 +349,26 @@
   .thumb-card img { width: 100%; display: block; background: #fff; }
   .thumb-badge { position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,.65); color: #fff; font-size: 10px; font-weight: 300; padding: 1px 6px; border-radius: 999px; font-family: "Pliant", sans-serif; }
   .thumb-remove { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; }
+
+  /* Merge / Reorder combined */
+  .doc-list { margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .doc-card { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+  .doc-card.expanded { border-color: var(--accent); }
+  .doc-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+  .doc-toggle { flex: none; cursor: pointer; color: var(--muted); font-size: 14px; user-select: none; width: 16px; text-align: center; }
+  .doc-handle { flex: none; color: var(--muted); cursor: grab; touch-action: none; font-size: 14px; font-weight: 300; }
+  .doc-handle:active { cursor: grabbing; }
+  .doc-info { flex: 1 1 auto; min-width: 0; }
+  .doc-name { margin: 0; font-size: 17px; font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-meta { margin: 0; font-size: 14px; color: var(--muted); font-weight: 300; }
+  .doc-remove { flex: none; }
+  .pages { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 12px; border-top: 1px solid var(--border); justify-content: center; background: var(--bg); }
+  .pages[hidden] { display: none; }
+  .page-card { width: 104px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); cursor: grab; position: relative; }
+  .page-card:active { cursor: grabbing; }
+  .page-card img { width: 100%; display: block; background: #fff; min-height: 60px; }
+  .page-placeholder { display: flex; align-items: center; justify-content: center; min-height: 132px; background: var(--surface); cursor: grab; }
+  .page-ellipsis { font-size: 30px; color: var(--muted); font-weight: 300; line-height: 1; }
   
   /* Formats */
   .format-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }

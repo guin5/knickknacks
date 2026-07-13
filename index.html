@@ -43,13 +43,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg>
       Files
     </button>
-    <button type="button" class="tab-btn" data-tab="merge">
-      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg>
-      Merge
-    </button>
-    <button type="button" class="tab-btn" data-tab="reorder">
-      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.4"/><circle cx="8" cy="12" r="1.4"/><circle cx="8" cy="18" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>
-      Reorder
+    <button type="button" class="tab-btn" data-tab="mr">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/><circle cx="8.5" cy="13" r="1.1" fill="#fff"/><circle cx="15" cy="16.3" r="1.1" fill="currentColor"/></svg>
+      Merge / Reorder
     </button>
     <button type="button" class="tab-btn" data-tab="clock">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
@@ -83,13 +79,9 @@
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg></span>
         <span class="home-tile-label">Files</span>
       </button>
-      <button type="button" class="home-tile" data-goto="merge" style="--tile:#8E5BD9">
-        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg></span>
-        <span class="home-tile-label">Merge</span>
-      </button>
-      <button type="button" class="home-tile" data-goto="reorder" style="--tile:#8E5BD9">
-        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.4"/><circle cx="8" cy="12" r="1.4"/><circle cx="8" cy="18" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>
-        <span class="home-tile-label">Reorder</span>
+      <button type="button" class="home-tile" data-goto="mr" style="--tile:#8E5BD9">
+        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/><circle cx="8.5" cy="13" r="1.1" fill="#fff"/><circle cx="15" cy="16.3" r="1.1" fill="currentColor"/></svg></span>
+        <span class="home-tile-label">Merge / Reorder</span>
       </button>
       <button type="button" class="home-tile" data-goto="clock" style="--tile:#C94F6D">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg></span>
@@ -128,27 +120,16 @@
     </div>
   </section>
 
-  <section class="tab-panel" id="tab-merge" hidden>
+  <section class="tab-panel" id="tab-mr" hidden>
     <div class="panel">
-      <div class="dropzone" id="mergeDropzone">
-        <p>Drop PDF files here, or</p>
-        <button type="button" id="mergeBrowseBtn" class="btn-browse">Choose files</button>
-        <input type="file" id="mergeFileInput" accept="application/pdf,.pdf" multiple hidden>
+      <div class="dropzone" id="mrDropzone">
+        <p>Drop one or more PDFs here, or</p>
+        <button type="button" id="mrBrowseBtn" class="btn-browse">Choose files</button>
+        <input type="file" id="mrFileInput" accept="application/pdf,.pdf" multiple hidden>
       </div>
-      <ol id="mergeFileList" class="file-list" aria-label="Files queued for merging, in order"></ol>
-      <button type="button" id="mergeBtn" class="btn-primary is-empty">Merge &amp; Download</button>
-    </div>
-  </section>
-
-  <section class="tab-panel" id="tab-reorder" hidden>
-    <div class="panel">
-      <div class="dropzone" id="reorderDropzone">
-        <p id="reorderDropzoneText">Drop one or more PDFs here, or</p>
-        <button type="button" id="reorderBrowseBtn" class="btn-browse">Choose files</button>
-        <input type="file" id="reorderFileInput" accept="application/pdf,.pdf" multiple hidden>
-      </div>
-      <div id="thumbGrid" class="thumb-grid"><p class="empty-state">No pages yet — add PDFs above.</p></div>
-      <button type="button" id="reorderExportBtn" class="btn-primary is-empty">Download reordered PDF</button>
+      <div id="docList" class="doc-list" aria-label="PDFs to merge, in order. Expand a PDF to reorder or move its pages."></div>
+      <p class="note" id="mrSizePreview" hidden></p>
+      <button type="button" id="mrExportBtn" class="btn-primary is-empty">Merge &amp; Download</button>
     </div>
   </section>
 

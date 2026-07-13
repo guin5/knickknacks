@@ -30,7 +30,7 @@ function setupPdfWorker() {
 
 const _tabLoads = {};
 function loadTabModule(tabName) {
-  if (tabName === 'merge' || tabName === 'reorder') {
+  if (tabName === 'mr') {
     if (!_tabLoads.pdf) {
       _tabLoads.pdf = loadScripts(PDF_SCRIPTS)
         .then(() => { setupPdfWorker(); return import('./pdf.js'); })
@@ -71,7 +71,7 @@ prefersLight.addEventListener('change', (e) => { isLightMode = e.matches; setThe
 /* --- Tab Management (with hash routing) --- */
 const tabButtons = document.querySelectorAll('.tab-btn');
 const siteNote = document.getElementById('siteNote');
-const fileBasedTabs = ['merge', 'reorder', 'files'];
+const fileBasedTabs = ['mr', 'files'];
 const validTabs = ['home', 'units', 'files', ...Array.from(tabButtons).map(b => b.dataset.tab)];
 const DEFAULT_TAB = 'home';
 let convertView = 'units';
