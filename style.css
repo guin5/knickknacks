@@ -341,6 +341,7 @@
   .btn-primary.is-empty { opacity: 0.55; }
   .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
   .note { text-align: center; font-size: 18px; font-weight: 300; letter-spacing: 0.3px; color: var(--muted); margin: 12px 0 0; }
+  .file-limit { text-align: center; font-size: 14px; color: var(--ghost); margin: 6px 0 0; }
 
   /* Thumbnails */
   .thumb-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; justify-content: center; }

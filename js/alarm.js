@@ -6,7 +6,6 @@ try { (function() {
     let intv, active = false, ringing = false, ringIntv, permissionRequested = false, fsTipTimer = null;
     const tabAlarm = document.getElementById('tab-alarm');
     const alarmInputs = document.getElementById('alarmInputs');
-    const alarmFsBtn = document.getElementById('alarmFsBtn');
     const alarmFsTip = document.getElementById('alarmFsTip');
 
     function showFsTip() {
@@ -55,17 +54,14 @@ try { (function() {
         if (ringing) {
             clearInterval(ringIntv); ringing = false; active = false;
             btn.textContent = 'Set Alarm'; setInputsReadonly(false);
-            if (alarmFsBtn) alarmFsBtn.disabled = true;
             hideFsTip();
         } else if (active) {
             clearInterval(intv); active = false;
             btn.textContent = 'Set Alarm'; setInputsReadonly(false);
-            if (alarmFsBtn) alarmFsBtn.disabled = true;
             hideFsTip();
         } else {
             active = true; btn.textContent = 'Cancel Alarm'; setInputsReadonly(true);
             intv = setInterval(checkAlarm, 1000);
-            if (alarmFsBtn) alarmFsBtn.disabled = false;
             showFsTip();
         }
     });

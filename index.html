@@ -127,6 +127,8 @@
         <button type="button" id="mrBrowseBtn" class="btn-browse">Choose files</button>
         <input type="file" id="mrFileInput" accept="application/pdf,.pdf" multiple hidden>
       </div>
+      <p class="file-limit" id="mrMaxSize"></p>
+      <p class="note" id="mrError" hidden></p>
       <div id="docList" class="doc-list" aria-label="PDFs to merge, in order. Expand a PDF to reorder or move its pages."></div>
       <p class="note" id="mrSizePreview" hidden></p>
       <button type="button" id="mrExportBtn" class="btn-primary is-empty">Merge &amp; Download</button>
@@ -140,6 +142,7 @@
         <button type="button" id="cvBrowseBtn" class="btn-browse">Choose file</button>
         <input type="file" id="cvFileInput" accept="image/*,.heic,.heif,.tif,.tiff,.pdf,.txt,.md,.html,.htm,.docx,.xlsx,.pptx" hidden>
       </div>
+      <p class="file-limit" id="cvMaxSize"></p>
       <div id="cvFileInfo" class="file-row" hidden style="margin-top:16px;">
         <span class="file-info"><p class="file-name" id="cvFileName">—</p><p class="file-size" id="cvFileMeta">—</p></span>
         <span class="file-actions"><button type="button" class="icon-btn" id="cvClearBtn" aria-label="Remove file">&times;</button></span>
@@ -192,9 +195,6 @@
         <button type="button" class="icon-btn muteToggle" aria-label="Toggle Mute">
           <svg class="icon-unmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
           <svg class="icon-muted" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-        </button>
-        <button type="button" class="icon-btn fs-btn requires-start" id="alarmFsBtn" disabled aria-label="Fullscreen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
         </button>
       </div>
       <div class="clock-edit-group" id="alarmInputs">

@@ -1,4 +1,4 @@
-import { formatBytes, getExt, triggerDownload, wireDropzone, loadScript } from './util.js';
+import { formatBytes, getExt, triggerDownload, wireDropzone, loadScript, checkFileSize, MAX_CONVERT_MB, MAX_RASTER_MP } from './util.js';
 
 /* --- CONVERT FILES --- */
 try { (function() {
@@ -158,6 +158,8 @@ try { (function() {
   async function setFile(f) {
     curr = f; sizes = {}; bmpCache = null; clearError();
     if (!f) { info.hidden = true; acts.innerHTML = ''; return; }
+    const sizeErr = checkFileSize(f, MAX_CONVERT_MB);
+    if (sizeErr) { showError(sizeErr); info.hidden = true; acts.innerHTML = ''; curr = null; return; }
     info.hidden = false;
     document.getElementById('cvFileName').textContent = f.name;
     document.getElementById('cvFileMeta').textContent = formatBytes(f.size);
@@ -168,6 +170,17 @@ try { (function() {
     }
     const targets = targetsFor(ext);
     if (!targets.length) { showError('Unsupported file type' + (ext ? ` (.${ext})` : '') + '.'); acts.innerHTML = ''; return; }
+    if (RASTER.includes(ext)) {
+      let bmp;
+      try { bmp = await getBitmap(f); }
+      catch (e) { showError('Could not read this image: ' + (e.message || e)); acts.innerHTML = ''; curr = null; return; }
+      const px = bmp.width * bmp.height, maxPx = MAX_RASTER_MP * 1e6;
+      if (px > maxPx) {
+        bmp.close(); bmpCache = null;
+        showError(`Image is ${bmp.width}×${bmp.height} (${(px / 1e6).toFixed(0)} MP) — the limit for this tool is ${MAX_RASTER_MP} MP. Try a smaller or lower-resolution image.`);
+        acts.innerHTML = ''; curr = null; return;
+      }
+    }
     acts.innerHTML = targets.map(t => `<button class="format-btn" data-fmt="${t.fmt}">${t.label}<span class="fmt-size">…</span></button>`).join('');
     targets.forEach(async t => {
       const btn = acts.querySelector(`.format-btn[data-fmt="${t.fmt}"]`); if (!btn) return;
@@ -187,6 +200,8 @@ try { (function() {
   }
 
   wireDropzone(document.getElementById('cvDropzone'), document.getElementById('cvFileInput'), document.getElementById('cvBrowseBtn'), files => setFile(files[0]));
+  const cvMaxEl = document.getElementById('cvMaxSize');
+  if (cvMaxEl) cvMaxEl.textContent = `Max file size: ${MAX_CONVERT_MB} MB`;
   document.getElementById('cvClearBtn').addEventListener('click', () => setFile(null));
 
   acts.addEventListener('click', async e => {

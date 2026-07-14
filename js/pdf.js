@@ -1,4 +1,4 @@
-import { formatBytes, escapeHtml, triggerDownload, wireDropzone } from './util.js';
+import { formatBytes, escapeHtml, triggerDownload, wireDropzone, checkFileSize, MAX_MERGE_MB } from './util.js';
 
 /* --- MERGE / REORDER (combined) --- */
 try { (function() {
@@ -15,6 +15,8 @@ try { (function() {
 
   const docList = document.getElementById('docList');
   const btn = document.getElementById('mrExportBtn');
+  const mrErr = document.getElementById('mrError');
+  function showMrError(msg) { if (mrErr) { mrErr.textContent = msg; mrErr.hidden = false; } }
 
   function totalPages() { return documents.reduce((n, d) => n + d.pages.length, 0); }
 
@@ -197,9 +199,12 @@ try { (function() {
   wireDropzone(document.getElementById('mrDropzone'), document.getElementById('mrFileInput'), document.getElementById('mrBrowseBtn'), async files => {
     const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (!pdfFiles.length) return;
+    if (mrErr) mrErr.hidden = true;
     const es = docList.querySelector('.empty-state');
     if (es) es.remove();
     for (const file of pdfFiles) {
+      const sizeErr = checkFileSize(file, MAX_MERGE_MB);
+      if (sizeErr) { showMrError(sizeErr + ' It was skipped.'); continue; }
       const buf = await file.arrayBuffer();
       const srcPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
       const pdfjsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
@@ -217,6 +222,8 @@ try { (function() {
     btn.classList.toggle('is-empty', totalPages() === 0);
     updateSizePreview();
   });
+  const mrMaxEl = document.getElementById('mrMaxSize');
+  if (mrMaxEl) mrMaxEl.textContent = `Max file size per PDF: ${MAX_MERGE_MB} MB`;
 
   if (typeof Sortable !== 'undefined') {
     new Sortable(docList, { group: 'mr-docs', draggable: '.doc-card', handle: '.doc-handle', animation: 150, onEnd: syncFromDOM });
