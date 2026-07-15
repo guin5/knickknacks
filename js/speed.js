@@ -30,6 +30,7 @@
   let upTarg = 0, upCur = 0, upVel = 0;
   let testRunning = false;
   let finishing = false;
+  let aborted = false;
   let phase = 'ping';
   let cachedSize = null;
 
@@ -186,7 +187,7 @@
     let lastReportTime = start;
 
     const worker = async () => {
-      while (!stopped) {
+      while (!stopped && !aborted) {
         const remaining = durationMs - (performance.now() - start);
         if (remaining <= 0) break;
         const controller = new AbortController();
@@ -218,7 +219,7 @@
 
     const workers = Array.from({ length: concurrency }, worker);
 
-    while (!stopped && performance.now() - start < durationMs) {
+    while (!stopped && !aborted && performance.now() - start < durationMs) {
       await new Promise(r => setTimeout(r, 250));
       const now = performance.now();
       const elapsed = (now - lastReportTime) / 1000;
@@ -272,11 +273,13 @@
   async function runFullTest() {
     speedPhase.textContent = 'Testing Ping...';
     await measureLatency();
+    if (aborted) return;
 
     phase = 'down';
     testStart = performance.now();
     speedPhase.textContent = 'Testing Download...';
     const downMbps = await runDownloadTest(PHASE_DURATION_MS, (speed) => { downTarg = speed; });
+    if (aborted) return;
     downTarg = downMbps > 0 ? downMbps : 0;
     if (!downData.length || downData[downData.length - 1].t < 10) {
       downData.push({ t: 10, v: downTarg });
@@ -286,6 +289,7 @@
     upStart = performance.now();
     speedPhase.textContent = 'Testing Upload...';
     const upMbps = await runUploadTest(PHASE_DURATION_MS, (speed) => { upTarg = speed; });
+    if (aborted) return;
     upTarg = upMbps > 0 ? upMbps : 0;
 
     finishing = true;
@@ -299,7 +303,16 @@
   }
 
   runBtn.addEventListener('click', function () {
-    this.disabled = true; this.textContent = 'Testing\u2026';
+    if (testRunning) {
+      aborted = true;
+      testRunning = false;
+      finishing = false;
+      this.textContent = 'Start test';
+      speedPhase.textContent = 'Test Stopped';
+      return;
+    }
+    aborted = false;
+    this.textContent = 'Stop';
     testRunning = true;
     resetAll();
     noteEl.hidden = true;

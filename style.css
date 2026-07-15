@@ -405,9 +405,10 @@
     cursor: pointer;
     padding: 4px 10px;
     border-radius: 12px;
-    transition: background .15s;
+    transition: background .15s, transform 0.1s;
   }
-  .clock-edit-group:hover { background: var(--accent-soft); }
+  .clock-edit-group:hover { background: var(--accent-soft); transform: scale(1.02); }
+  .clock-edit-group:active { transform: scale(0.98); }
   .clock-edit-group input {
     width: 2.5ch;
     font: inherit;
@@ -520,6 +521,7 @@
   .home-fab:active { transform: translateX(-50%) scale(0.95); }
   .home-fab svg { width: 18px; height: 18px; flex: none; }
   .home-fab-label { line-height: 1; }
+  .tab-panel.simple-mode ~ .home-fab,
   .tab-panel:has(.panel.fs-active) ~ .home-fab,
   .home-fab[hidden] { display: none; }
 
