@@ -19,33 +19,21 @@
   </div>
 
   <nav class="tabbar">
-    <div class="tab-dropdown">
-      <button type="button" class="tab-btn active" data-tab="convert">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>
-        Convert
-      </button>
-      <div class="tab-dropdown-menu">
-        <button type="button" class="tab-dropdown-item" data-convert="units">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg>
-          Units
-        </button>
-        <button type="button" class="tab-dropdown-item" data-convert="files">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg>
-          Files
-        </button>
-      </div>
-    </div>
-    <button type="button" class="tab-btn mobile-only" data-tab="units">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg>
-      Units
-    </button>
-    <button type="button" class="tab-btn mobile-only" data-tab="files">
+    <button type="button" class="tab-btn" data-tab="files">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg>
-      Files
+      File Convert
     </button>
     <button type="button" class="tab-btn" data-tab="mr">
       <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg>
       Merge / Reorder
+    </button>
+    <button type="button" class="tab-btn" data-tab="words">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg>
+      Words
+    </button>
+    <button type="button" class="tab-btn active" data-tab="units">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg>
+      Units
     </button>
     <button type="button" class="tab-btn" data-tab="clock">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
@@ -71,17 +59,21 @@
 
   <section class="tab-panel" id="tab-home">
     <div class="home-grid" id="homeGrid">
-      <button type="button" class="home-tile" data-goto="units" style="--tile:#2374AB">
-        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg></span>
-        <span class="home-tile-label">Units</span>
-      </button>
       <button type="button" class="home-tile" data-goto="files" style="--tile:#8E5BD9">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg></span>
-        <span class="home-tile-label">Files</span>
+        <span class="home-tile-label">File Convert</span>
       </button>
       <button type="button" class="home-tile" data-goto="mr" style="--tile:#8E5BD9">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg></span>
         <span class="home-tile-label">Merge / Reorder</span>
+      </button>
+      <button type="button" class="home-tile" data-goto="words" style="--tile:#D97706">
+        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg></span>
+        <span class="home-tile-label">Words</span>
+      </button>
+      <button type="button" class="home-tile" data-goto="units" style="--tile:#2374AB">
+        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg></span>
+        <span class="home-tile-label">Units</span>
       </button>
       <button type="button" class="home-tile" data-goto="clock" style="--tile:#C94F6D">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg></span>
@@ -149,6 +141,27 @@
       </div>
       <div id="cvActions" class="format-grid"></div>
       <p class="note" id="cvError" hidden></p>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tab-words" hidden>
+    <div class="panel">
+      <div class="wc-textarea-wrap">
+        <div class="wc-highlight" id="wcHighlight" aria-hidden="true"></div>
+        <textarea id="wcInput" class="wc-textarea" placeholder="Type or paste your text here..." spellcheck="true"></textarea>
+      </div>
+      <div class="wc-limits">
+        <label class="wc-limit">Word Limit <input type="number" id="wcWordLimit" class="wc-limit-input" min="0" placeholder="—"></label>
+        <label class="wc-limit">Char Limit <input type="number" id="wcCharLimit" class="wc-limit-input" min="0" placeholder="—"></label>
+      </div>
+      <div class="wc-stats">
+        <div class="wc-stat"><span class="wc-stat-value" id="wcWords">0</span><span class="wc-stat-label">Words</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcChars">0</span><span class="wc-stat-label">Characters</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcCharsNoSpace">0</span><span class="wc-stat-label">No Space Chars</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcSentences">0</span><span class="wc-stat-label">Sentences</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcParagraphs">0</span><span class="wc-stat-label">Paragraphs</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcReadTime">0m</span><span class="wc-stat-label">Read Time</span></div>
+      </div>
     </div>
   </section>
 

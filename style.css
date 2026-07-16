@@ -190,56 +190,6 @@
   .tab-btn svg { width: 16px; height: 16px; flex: none; }
   .tab-btn:hover { background: var(--accent-soft); color: var(--text); }
   .tab-btn.active { background: var(--accent); color: #fff; }
-  .tab-btn.mobile-only { display: none; }
-
-  /* Convert dropdown (Units / Files) */
-  .tab-dropdown { position: relative; flex: none; }
-  .tab-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(-6px);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .15s ease, transform .15s ease, visibility .15s;
-    z-index: 200;
-    min-width: 140px;
-  }
-  .tab-dropdown:hover .tab-dropdown-menu,
-  .tab-dropdown:focus-within .tab-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
-  }
-  .tab-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font: inherit;
-    font-size: 16px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    color: var(--muted);
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-    text-transform: uppercase;
-    transition: background .15s, color .15s;
-  }
-  .tab-dropdown-item svg { width: 16px; height: 16px; flex: none; }
-  .tab-dropdown-item:hover { background: var(--accent-soft); color: var(--text); }
-  .tab-dropdown-item.active { color: var(--accent); }
 
   .tab-panel { display: block; }
   .tab-panel[hidden] { display: none; }
@@ -383,6 +333,124 @@
   .format-btn.calcing .fmt-size::before { content: '…'; font-size: 13px; }
   .format-btn.failed .fmt-size { color: var(--danger, #c0392b); }
   @keyframes fmt-spin { to { transform: rotate(360deg); } }
+
+  /* Word Counter */
+  .wc-textarea-wrap { position: relative; }
+  .wc-highlight {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding: 14px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.6;
+    letter-spacing: 0.3px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow: hidden;
+    color: transparent;
+    pointer-events: none;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    z-index: 1;
+  }
+  .wc-highlight mark {
+    background: rgba(255, 213, 0, 0.25);
+    color: transparent;
+    border-radius: 2px;
+  }
+  .wc-textarea {
+    width: 100%;
+    min-height: 240px;
+    padding: 14px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.6;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+    resize: vertical;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+    transition: border-color .15s;
+    position: relative;
+    z-index: 2;
+  }
+  .wc-textarea:focus { border-color: var(--accent); }
+  .wc-textarea::placeholder { color: var(--ghost); }
+  .wc-limits {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+  .wc-limit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .wc-limit-input {
+    width: 72px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+    text-align: center;
+    -moz-appearance: textfield;
+    transition: border-color .15s;
+  }
+  .wc-limit-input:focus { border-color: var(--accent); }
+  .wc-limit-input::-webkit-outer-spin-button,
+  .wc-limit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .wc-limit-input::placeholder { color: var(--ghost); }
+  .wc-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+    justify-content: center;
+  }
+  .wc-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 80px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color .15s;
+  }
+  .wc-stat-value {
+    font-family: "Pliant", sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    transition: color .15s;
+  }
+  .wc-stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
 
   /* Time/Timer/Stopwatch common */
   .time-panel { text-align: center; }
@@ -548,11 +616,6 @@
     }
     .tabbar::-webkit-scrollbar { display: none; }
     .tab-btn { flex: 0 0 auto; scroll-snap-align: start; }
-
-    /* On phones, drop the desktop Convert dropdown entirely and show Units /
-       Files as their own tabs (added in the markup with .mobile-only). */
-    .tab-dropdown { display: none; }
-    .tab-btn.mobile-only { display: inline-flex; }
   }
 
   /* --- Phones: scale down type and spacing so nothing overflows --- */

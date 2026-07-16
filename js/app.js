@@ -3,6 +3,7 @@ import './clock.js';
 import './timer.js';
 import './alarm.js';
 import './stopwatch.js';
+import './wordcount.js';
 
 /* --- Lazy Script Loader --- */
 import { loadScript, loadScripts } from './util.js';
@@ -36,7 +37,7 @@ function loadTabModule(tabName) {
         .then(() => { setupPdfWorker(); return import('./pdf.js'); })
         .catch(e => { console.error('PDF load failed', e); delete _tabLoads.pdf; });
     }
-  } else if (tabName === 'convert' || tabName === 'files') {
+  } else if (tabName === 'files') {
     if (!_tabLoads.converter) {
       _tabLoads.converter = loadScripts(CONVERT_SCRIPTS)
         .then(() => { setupPdfWorker(); return import('./converter.js'); })
@@ -72,27 +73,18 @@ prefersLight.addEventListener('change', (e) => { isLightMode = e.matches; setThe
 const tabButtons = document.querySelectorAll('.tab-btn');
 const siteNote = document.getElementById('siteNote');
 const fileBasedTabs = ['mr', 'files'];
-const validTabs = ['home', 'units', 'files', ...Array.from(tabButtons).map(b => b.dataset.tab)];
+const validTabs = ['home', 'units', 'files', 'words', ...Array.from(tabButtons).map(b => b.dataset.tab)];
 const DEFAULT_TAB = 'home';
-let convertView = 'units';
-
 // Renders a tab as active without touching the URL — used by both the hashchange
 // listener and the initial load, so the hash is always the single source of truth.
 function activateTab(tabName, focusInput) {
   if (!validTabs.includes(tabName)) tabName = DEFAULT_TAB;
-  const isConvertView = (tabName === 'units' || tabName === 'files');
-  if (isConvertView) convertView = (tabName === 'units') ? 'units' : 'files';
-  tabButtons.forEach(b => {
-    const match = isConvertView
-      ? (b.dataset.tab === 'convert' || b.dataset.tab === convertView)
-      : b.dataset.tab === tabName;
-    b.classList.toggle('active', match);
-  });
-  document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.toggle('active', (isConvertView && i.dataset.convert === convertView)));
+  tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.id !== 'tab-' + tabName);
   siteNote.hidden = !fileBasedTabs.includes(tabName);
   loadTabModule(tabName);
   if (tabName === 'units' && focusInput) document.getElementById('num-in').focus();
+  if (tabName === 'words' && focusInput) document.getElementById('wcInput').focus();
   return tabName;
 }
 
@@ -108,17 +100,8 @@ function navigateToTab(tabName) {
 }
 
 tabButtons.forEach(btn => btn.addEventListener('click', () => {
-  let tabName = btn.dataset.tab;
-  if (tabName === 'convert') tabName = (convertView === 'files') ? 'files' : 'units';
-  navigateToTab(tabName);
+  navigateToTab(btn.dataset.tab);
 }));
-
-document.querySelectorAll('.tab-dropdown-item').forEach(item => {
-  item.addEventListener('click', (e) => {
-    e.stopPropagation();
-    navigateToTab((item.dataset.convert === 'units') ? 'units' : 'files');
-  });
-});
 
 document.querySelectorAll('.home-tile').forEach(tile => tile.addEventListener('click', () => {
   navigateToTab(tile.dataset.goto);
