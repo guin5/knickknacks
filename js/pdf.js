@@ -243,7 +243,7 @@ try { (function() {
       }
       triggerDownload(new Blob([await out.save()], { type: 'application/pdf' }), 'merged.pdf');
     } catch (e) { alert('Merge failed: ' + e.message); }
-    finally { btn.disabled = false; btn.textContent = 'Merge & Download'; }
+    finally { btn.disabled = false; btn.textContent = 'Merge & download'; }
   });
 
   setEmptyState();

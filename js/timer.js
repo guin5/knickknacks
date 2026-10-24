@@ -37,7 +37,7 @@ try { (function() {
   function tk() { 
       if(rem <= 0) { 
           clearInterval(intv); setInputsReadonly(false);
-          btn.textContent = 'Stop Alarm'; 
+          btn.textContent = 'Stop alarm';
           tH.value = '00'; tM.value = '00'; tS.value = '00';
           playBeep(); alarmInterval = setInterval(playBeep, 1200);
           if ('Notification' in window && Notification.permission === 'granted') new Notification("Timer finished!");

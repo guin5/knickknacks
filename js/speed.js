@@ -82,7 +82,7 @@
     const yStep = niceStep(maxSpeed, 4);
     const xStep = niceStep(maxT, 5);
 
-    ctx.font = '11px "Pliant", sans-serif';
+    ctx.font = `10px ${getComputedStyle(canvas).fontFamily}`;
     ctx.fillStyle = colMuted;
 
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -153,7 +153,7 @@
         dEl.textContent = downTarg > 0 ? downTarg.toFixed(1) + ' Mbps' : '\u2014';
         uEl.textContent = upTarg > 0 ? upTarg.toFixed(1) + ' Mbps' : '\u2014';
         testRunning = false; finishing = false;
-        speedPhase.textContent = 'Test Complete';
+        speedPhase.textContent = 'Test complete';
         runBtn.disabled = false; runBtn.textContent = 'Run again';
         draw();
         return;
@@ -271,13 +271,13 @@
   // Orchestrates the full run: ping, then exactly PHASE_DURATION_MS of
   // download, then exactly PHASE_DURATION_MS of upload.
   async function runFullTest() {
-    speedPhase.textContent = 'Testing Ping...';
+    speedPhase.textContent = 'Testing ping...';
     await measureLatency();
     if (aborted) return;
 
     phase = 'down';
     testStart = performance.now();
-    speedPhase.textContent = 'Testing Download...';
+    speedPhase.textContent = 'Testing download...';
     const downMbps = await runDownloadTest(PHASE_DURATION_MS, (speed) => { downTarg = speed; });
     if (aborted) return;
     downTarg = downMbps > 0 ? downMbps : 0;
@@ -287,7 +287,7 @@
 
     phase = 'up';
     upStart = performance.now();
-    speedPhase.textContent = 'Testing Upload...';
+    speedPhase.textContent = 'Testing upload...';
     const upMbps = await runUploadTest(PHASE_DURATION_MS, (speed) => { upTarg = speed; });
     if (aborted) return;
     upTarg = upMbps > 0 ? upMbps : 0;
@@ -308,7 +308,7 @@
       testRunning = false;
       finishing = false;
       this.textContent = 'Start test';
-      speedPhase.textContent = 'Test Stopped';
+      speedPhase.textContent = 'Test stopped';
       return;
     }
     aborted = false;
@@ -316,7 +316,7 @@
     testRunning = true;
     resetAll();
     noteEl.hidden = true;
-    speedPhase.textContent = 'Testing Ping...';
+    speedPhase.textContent = 'Testing ping...';
     requestAnimationFrame(tick);
     runFullTest();
   });
