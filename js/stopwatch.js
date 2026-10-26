@@ -17,10 +17,11 @@ try { (function() {
   document.getElementById('swReset').addEventListener('click', () => { clearInterval(intv); run=false; el=0; laps=[]; bTog.textContent='Start'; big.textContent='00:00.00'; lst.innerHTML=''; tipCtrl.hide(); });
   big.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (run) { tabSW.classList.toggle('simple-mode'); tipCtrl.hide(); }
+    if (document.fullscreenElement) return;
+    if (run || tabSW.classList.contains('simple-mode')) { tabSW.classList.toggle('simple-mode'); tipCtrl.hide(); }
   });
   tabSW.addEventListener('click', (e) => {
-    if (tabSW.classList.contains('simple-mode') && e.target !== big && !e.target.closest('.time-controls')) {
+    if (tabSW.classList.contains('simple-mode') && e.target !== big && !e.target.closest('.time-controls, .controls-row')) {
       tabSW.classList.remove('simple-mode');
     }
   });

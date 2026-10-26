@@ -13,7 +13,31 @@ export function loadScript(url) {
   return cache[url];
 }
 loadScript._cache = {};
-export function loadScripts(urls) { return Promise.all(urls.map(loadScript)); }
+export function loadScripts(urls, onProgress = () => {}) {
+  let completed = 0;
+  return Promise.all(urls.map(url => loadScript(url).then(() => onProgress(++completed, urls.length))));
+}
+
+export function setToolStatus(prefix, message = '', { state = 'working', value = null, max = 1, retry = false } = {}) {
+  const status = document.getElementById(`${prefix}Status`);
+  status.hidden = !message;
+  status.dataset.state = state;
+  status.querySelector('.tool-status-message').textContent = message;
+  status.querySelector('.tool-retry').hidden = !retry;
+  const progress = status.querySelector('progress');
+  progress.hidden = !message || state === 'error' || state === 'success';
+  progress.max = Math.max(1, max);
+  if (value === null) progress.removeAttribute('value');
+  else progress.value = value;
+}
+
+export function setFileToolBusy(prefix, busy, { disabled = busy } = {}) {
+  document.getElementById(`${prefix}Dropzone`).setAttribute('aria-busy', String(busy));
+  document.getElementById(`${prefix}FileInput`).disabled = disabled;
+  document.getElementById(`${prefix}BrowseBtn`).disabled = disabled;
+}
+
+export function yieldToBrowser() { return new Promise(resolve => setTimeout(resolve, 0)); }
 
 // --- Hardware-aware file-size limits ---
 // All file processing happens client-side, so oversized files blow up RAM
@@ -24,8 +48,8 @@ function getDeviceRamGB() { return (navigator.deviceMemory && navigator.deviceMe
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 const RAM_GB = getDeviceRamGB();
 
-// Convert/Files tab: raster decode is RAM-heavy per byte, so cap tighter.
-export const MAX_CONVERT_MB = clamp(Math.round(RAM_GB * 12.5), 25, 100);
+// Convert/Files tab: keep the enforced cap aligned with the upload instructions.
+export const MAX_CONVERT_MB = 50;
 // Merge/Reorder PDF tab: held decompressed in memory by two libs.
 export const MAX_MERGE_MB = clamp(Math.round(RAM_GB * 25), 50, 200);
 // Raster images: cap decoded pixel count so the bitmap/canvas fit in RAM.
@@ -70,10 +94,10 @@ export function createFsTipController(fsTipEl) {
 }
 
 export function wireDropzone(drop, input, btn, cb) {
-  drop.addEventListener('click', () => input.click());
-  btn.addEventListener('click', e => { e.stopPropagation(); input.click(); });
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('click', e => { if (!input.disabled && e.target !== input) input.click(); });
+  btn.addEventListener('click', e => { e.stopPropagation(); if (!input.disabled) input.click(); });
+  drop.addEventListener('dragover', e => { e.preventDefault(); if (!input.disabled) drop.classList.add('dragover'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
-  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); cb(e.dataTransfer.files); });
-  input.addEventListener('change', e => { cb(e.target.files); input.value = ''; });
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); if (!input.disabled && e.dataTransfer.files.length) cb(e.dataTransfer.files); });
+  input.addEventListener('change', e => { if (!input.disabled && e.target.files.length) cb(e.target.files); input.value = ''; });
 }

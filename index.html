@@ -1,58 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
+<script>
+try {
+  const theme = localStorage.getItem('knickknacks-theme');
+  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+} catch (e) { /* Dark mode remains the default when storage is unavailable. */ }
+</script>
 <title>Knickknacks</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232452E8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 3H3v18h18V3zM9 21V9h12M3 15h6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="page">
   <div class="header-group">
-    <h1>Knickknacks</h1>
-    <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode"></button>
-    <nav class="tabbar">
-      <button type="button" class="tab-btn" data-tab="files">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg>
-        File Convert
-      </button>
-      <button type="button" class="tab-btn" data-tab="mr">
-        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg>
-        Merge / Reorder
-      </button>
-      <button type="button" class="tab-btn" data-tab="words">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg>
-        Words
-      </button>
-      <button type="button" class="tab-btn active" data-tab="units">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg>
-        Units
-      </button>
-      <button type="button" class="tab-btn" data-tab="clock">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
-        Clock
-      </button>
-      <button type="button" class="tab-btn" data-tab="timer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 3h4"/></svg>
-        Timer
-      </button>
-      <button type="button" class="tab-btn" data-tab="alarm">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 3h4 M19 3l3 3 M5 3l-3 3"/></svg>
-        Alarm
-      </button>
-      <button type="button" class="tab-btn" data-tab="stopwatch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M10 3h4M18 6l2-2"/></svg>
-        Stopwatch
-      </button>
-      <button type="button" class="tab-btn" data-tab="speed">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5a8 8 0 0 1 16 0"/><path d="M12 15.5l4-5.2"/><circle cx="12" cy="15.5" r="1"/></svg>
-        Speed
-      </button>
+    <h1><a class="wordmark" href="#home" aria-label="Knickknacks home">Knickknacks</a></h1>
+    <nav class="tabbar" aria-label="Tools and appearance">
+      <div class="tab-links">
+        <button type="button" class="tab-btn" data-tab="files">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h7l4 4v14h-11z"/><path d="M9 12.5h6M9 15.8h6M9 9.2h3"/></svg>
+          File Convert
+        </button>
+        <button type="button" class="tab-btn" data-tab="mr">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg>
+          Merge / Reorder
+        </button>
+        <button type="button" class="tab-btn" data-tab="words">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg>
+          Words
+        </button>
+        <button type="button" class="tab-btn" data-tab="units">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v18h18V3zM9 21V9h12M3 15h6"/></svg>
+          Units
+        </button>
+        <button type="button" class="tab-btn" data-tab="clock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+          Clock
+        </button>
+        <button type="button" class="tab-btn" data-tab="timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 3h4"/></svg>
+          Timer
+        </button>
+        <button type="button" class="tab-btn" data-tab="alarm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 3h4 M19 3l3 3 M5 3l-3 3"/></svg>
+          Alarm
+        </button>
+        <button type="button" class="tab-btn" data-tab="stopwatch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M10 3h4M18 6l2-2"/></svg>
+          Stopwatch
+        </button>
+        <button type="button" class="tab-btn" data-tab="speed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5a8 8 0 0 1 16 0"/><path d="M12 15.5l4-5.2"/><circle cx="12" cy="15.5" r="1"/></svg>
+          Speed
+        </button>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode" aria-label="Toggle light/dark mode"></button>
     </nav>
   </div>
 
@@ -97,10 +105,10 @@
     </div>
   </section>
 
-  <section class="tab-panel" id="tab-units">
+  <section class="tab-panel" id="tab-units" hidden>
     <div class="uc-wrapper">
       <div class="palette">
-          <div class="input-wrap"><span class="measure" id="num-measure"></span><input type="text" id="num-in" placeholder="0" autofocus autocomplete="off"></div>
+          <div class="input-wrap"><span class="measure" id="num-measure"></span><input type="text" id="num-in" placeholder="0" autocomplete="off"></div>
           <div class="input-wrap"><span class="measure" id="src-measure"></span><span class="ghost" id="src-ghost"></span><input type="text" id="src-in" autocomplete="off" spellcheck="false"></div>
           <div class="static-text">to</div>
           <div class="input-wrap"><span class="measure" id="dest-measure"></span><span class="ghost" id="dest-ghost"></span><input type="text" id="dest-in" autocomplete="off" spellcheck="false"></div>
@@ -113,33 +121,55 @@
 
   <section class="tab-panel" id="tab-mr" hidden>
     <div class="panel">
-      <div class="dropzone" id="mrDropzone">
-        <p>Drop one or more PDFs here, or</p>
-        <button type="button" id="mrBrowseBtn" class="btn-browse">Choose files</button>
-        <input type="file" id="mrFileInput" accept="application/pdf,.pdf" multiple hidden>
+      <div class="dropzone" id="mrDropzone" role="group" aria-labelledby="mrUploadTitle" aria-describedby="mrFormats mrMaxSize mrPrivacy" aria-busy="true">
+        <p class="dropzone-title" id="mrUploadTitle">Drag and drop a file here</p>
+        <button type="button" id="mrBrowseBtn" class="btn-browse" aria-describedby="mrFormats mrMaxSize mrPrivacy" disabled>Choose Files</button>
+        <p class="upload-details">
+          <span id="mrFormats">PDFs</span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="mrMaxSize">Max <span class="upload-size">—</span> per file</span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="mrPrivacy">Processed Locally</span>
+        </p>
+        <input type="file" id="mrFileInput" accept="application/pdf,.pdf" multiple hidden disabled>
       </div>
-      <p class="file-limit" id="mrMaxSize"></p>
-      <p class="note" id="mrError" hidden></p>
+      <div class="tool-status" id="mrStatus" role="status" aria-live="polite" hidden>
+        <span class="tool-status-message" id="mrStatusMessage"></span>
+        <button type="button" class="tool-retry" hidden>Retry</button>
+        <progress class="tool-progress" max="1" aria-labelledby="mrStatusMessage"></progress>
+      </div>
+      <p class="note" id="mrError" role="alert" hidden></p>
       <div id="docList" class="doc-list" aria-label="PDFs to merge, in order. Expand a PDF to reorder or move its pages."></div>
       <p class="note" id="mrSizePreview" hidden></p>
-      <button type="button" id="mrExportBtn" class="btn-primary is-empty">Merge &amp; download</button>
+      <button type="button" id="mrExportBtn" class="btn-primary is-empty" disabled>Merge &amp; Download</button>
     </div>
   </section>
 
   <section class="tab-panel" id="tab-files" hidden>
     <div class="panel">
-      <div class="dropzone" id="cvDropzone">
-        <p>Drop an image, PDF, TXT, MD, HTML, DOCX, XLSX, PPTX, or TIFF, or</p>
-        <button type="button" id="cvBrowseBtn" class="btn-browse">Choose file</button>
-        <input type="file" id="cvFileInput" accept="image/*,.heic,.heif,.tif,.tiff,.pdf,.txt,.md,.html,.htm,.docx,.xlsx,.pptx" hidden>
+      <div class="dropzone" id="cvDropzone" role="group" aria-labelledby="cvUploadTitle" aria-describedby="cvFormats cvMaxSize cvPrivacy" aria-busy="true">
+        <p class="dropzone-title" id="cvUploadTitle">Drag and drop a file here</p>
+        <button type="button" id="cvBrowseBtn" class="btn-browse" aria-describedby="cvFormats cvMaxSize cvPrivacy" disabled>Choose File</button>
+        <p class="upload-details">
+          <span id="cvFormats">Images, PDFs &amp; Documents</span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="cvMaxSize">Max <span class="upload-size">50 MB</span></span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="cvPrivacy">Processed Locally</span>
+        </p>
+        <input type="file" id="cvFileInput" accept="image/*,.heic,.heif,.tif,.tiff,.pdf,.txt,.md,.html,.htm,.docx,.xlsx,.pptx" hidden disabled>
       </div>
-      <p class="file-limit" id="cvMaxSize"></p>
+      <div class="tool-status" id="cvStatus" role="status" aria-live="polite" hidden>
+        <span class="tool-status-message" id="cvStatusMessage"></span>
+        <button type="button" class="tool-retry" hidden>Retry</button>
+        <progress class="tool-progress" max="1" aria-labelledby="cvStatusMessage"></progress>
+      </div>
       <div id="cvFileInfo" class="file-row" hidden style="margin-top:16px;">
         <span class="file-info"><p class="file-name" id="cvFileName">—</p><p class="file-size" id="cvFileMeta">—</p></span>
         <span class="file-actions"><button type="button" class="icon-btn" id="cvClearBtn" aria-label="Remove file">&times;</button></span>
       </div>
       <div id="cvActions" class="format-grid"></div>
-      <p class="note" id="cvError" hidden></p>
+      <p class="note" id="cvError" role="alert" hidden></p>
     </div>
   </section>
 
@@ -150,16 +180,16 @@
         <textarea id="wcInput" class="wc-textarea" placeholder="Type or paste your text here..." spellcheck="true"></textarea>
       </div>
       <div class="wc-limits">
-        <label class="wc-limit">Word limit <input type="number" id="wcWordLimit" class="wc-limit-input" min="0" placeholder="—"></label>
-        <label class="wc-limit">Char limit <input type="number" id="wcCharLimit" class="wc-limit-input" min="0" placeholder="—"></label>
+        <label class="wc-limit">Word Limit <input type="number" id="wcWordLimit" class="wc-limit-input" min="0" placeholder="—"></label>
+        <label class="wc-limit">Character Limit <input type="number" id="wcCharLimit" class="wc-limit-input" min="0" placeholder="—"></label>
       </div>
       <div class="wc-stats">
         <div class="wc-stat"><span class="wc-stat-value" id="wcWords">0</span><span class="wc-stat-label">Words</span></div>
         <div class="wc-stat"><span class="wc-stat-value" id="wcChars">0</span><span class="wc-stat-label">Characters</span></div>
-        <div class="wc-stat"><span class="wc-stat-value" id="wcCharsNoSpace">0</span><span class="wc-stat-label">No space chars</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcCharsNoSpace">0</span><span class="wc-stat-label">Characters <span>(no spaces)</span></span></div>
         <div class="wc-stat"><span class="wc-stat-value" id="wcSentences">0</span><span class="wc-stat-label">Sentences</span></div>
         <div class="wc-stat"><span class="wc-stat-value" id="wcParagraphs">0</span><span class="wc-stat-label">Paragraphs</span></div>
-        <div class="wc-stat"><span class="wc-stat-value" id="wcReadTime">0m</span><span class="wc-stat-label">Read time</span></div>
+        <div class="wc-stat"><span class="wc-stat-value" id="wcReadTime">0m</span><span class="wc-stat-label">Read Time</span></div>
       </div>
     </div>
   </section>
@@ -217,7 +247,7 @@
       </div>
       <p class="fs-tip" id="alarmFsTip" hidden>Click time to expand</p>
       <div class="controls-row">
-        <button class="ctrl-btn primary" id="alarmToggle">Set alarm</button>
+        <button class="ctrl-btn primary" id="alarmToggle">Set Alarm</button>
       </div>
     </div>
   </section>
@@ -254,14 +284,12 @@
         <div class="speed-stat"><span class="speed-stat-label">Upload</span><span class="speed-stat-value" id="speedUp">&mdash;</span></div>
       </div>
 
-      <div class="speed-phase" id="speedPhase">Ready to test</div>
+      <div class="speed-phase" id="speedPhase">Ready to Test</div>
 
-      <button type="button" id="speedRunBtn" class="btn-speed">Start test</button>
+      <button type="button" id="speedRunBtn" class="btn-speed">Start Test</button>
       <p class="note" id="speedNote" hidden></p>
     </div>
   </section>
-
-  <p class="site-note" id="siteNote" hidden>Files stay on this device — nothing is uploaded.</p>
 
   <button type="button" class="home-fab" id="homeFab" title="Go home" aria-label="Go home">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>
@@ -269,6 +297,6 @@
   </button>
 </main>
 
-<script type="module" src="js/app.js"></script>
+<script defer src="js/app.bundle.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-import { formatBytes, escapeHtml, triggerDownload, wireDropzone, checkFileSize, MAX_MERGE_MB } from './util.js';
+import { formatBytes, escapeHtml, triggerDownload, wireDropzone, checkFileSize, MAX_MERGE_MB, setToolStatus, setFileToolBusy, yieldToBrowser } from './util.js';
 
 /* --- MERGE / REORDER (combined) --- */
 try { (function() {
@@ -12,6 +12,7 @@ try { (function() {
   // loaded PDFDocument + pdfjs doc + metadata keyed by id, used for export.
   let documents = [];
   let docMap = {};
+  let busy = false;
 
   const docList = document.getElementById('docList');
   const btn = document.getElementById('mrExportBtn');
@@ -19,6 +20,19 @@ try { (function() {
   function showMrError(msg) { if (mrErr) { mrErr.textContent = msg; mrErr.hidden = false; } }
 
   function totalPages() { return documents.reduce((n, d) => n + d.pages.length, 0); }
+
+  function syncControls() {
+    btn.disabled = busy || totalPages() === 0;
+    btn.classList.toggle('is-empty', totalPages() === 0);
+  }
+
+  function setBusy(value) {
+    busy = value;
+    setFileToolBusy('mr', value);
+    docList.inert = value;
+    docList.setAttribute('aria-busy', String(value));
+    syncControls();
+  }
 
   function isWindowIndex(i, n) {
     return n <= THUMB_WINDOW * 2 || i < THUMB_WINDOW || i >= n - THUMB_WINDOW;
@@ -131,7 +145,7 @@ try { (function() {
         });
       });
       if (!pages.length) { card.remove(); return; }
-      next.push({ id, name: docMap[id].name, size: docMap[id].size, expanded: card.classList.contains('expanded'), pages });
+      next.push({ id, name: docMap[id].name, size: docMap[id].size, origCount: docMap[id].numPages, expanded: card.classList.contains('expanded'), pages });
     });
     documents = next;
     documents.forEach(d => {
@@ -141,7 +155,7 @@ try { (function() {
         if (meta) meta.textContent = `${d.pages.length} page${d.pages.length !== 1 ? 's' : ''} · ${formatBytes(d.size)}`;
       }
     });
-    btn.classList.toggle('is-empty', totalPages() === 0);
+    syncControls();
     setEmptyState();
   }
 
@@ -184,7 +198,7 @@ try { (function() {
       card.remove();
       delete docMap[id];
       documents = documents.filter(d => d.id !== id);
-      btn.classList.toggle('is-empty', totalPages() === 0);
+      syncControls();
       updateSizePreview();
       setEmptyState();
       return;
@@ -197,54 +211,80 @@ try { (function() {
   });
 
   wireDropzone(document.getElementById('mrDropzone'), document.getElementById('mrFileInput'), document.getElementById('mrBrowseBtn'), async files => {
+    if (busy) return;
     const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (!pdfFiles.length) return;
+    if (!pdfFiles.length) { showMrError('Choose a PDF file to merge or reorder.'); return; }
     if (mrErr) mrErr.hidden = true;
-    const es = docList.querySelector('.empty-state');
-    if (es) es.remove();
-    for (const file of pdfFiles) {
-      const sizeErr = checkFileSize(file, MAX_MERGE_MB);
-      if (sizeErr) { showMrError(sizeErr + ' It was skipped.'); continue; }
-      const buf = await file.arrayBuffer();
-      const srcPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-      const pdfjsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-      const id = 'd' + Math.random().toString(36).slice(2);
-      docMap[id] = { srcPdf, pdfjsDoc, numPages: pdfjsDoc.numPages, name: file.name, size: file.size };
-      const pages = [];
-      for (let i = 1; i <= pdfjsDoc.numPages; i++) {
-        pages.push({ homeDocId: id, pageIdx: i - 1, origNum: i, imgSrc: null });
+    setBusy(true);
+    let completed = 0, added = 0;
+    try {
+      for (const file of pdfFiles) {
+        setToolStatus('mr', `Reading ${file.name}… (${completed + 1}/${pdfFiles.length})`, { value: completed, max: pdfFiles.length });
+        await yieldToBrowser();
+        try {
+          const sizeErr = checkFileSize(file, MAX_MERGE_MB);
+          if (sizeErr) throw new Error(sizeErr);
+          const buf = await file.arrayBuffer();
+          const srcPdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+          const pdfjsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+          const id = 'd' + Math.random().toString(36).slice(2);
+          docMap[id] = { srcPdf, pdfjsDoc, numPages: pdfjsDoc.numPages, name: file.name, size: file.size };
+          const pages = [];
+          for (let i = 1; i <= pdfjsDoc.numPages; i++) pages.push({ homeDocId: id, pageIdx: i - 1, origNum: i, imgSrc: null });
+          const docObj = { id, name: file.name, size: file.size, expanded: true, origCount: pdfjsDoc.numPages, pages };
+          documents.push(docObj);
+          const card = renderDoc(docObj);
+          await generateThumbs(card, docObj);
+          added++;
+        } catch (e) {
+          showMrError(`Could not add ${file.name}: ${e.message || e}`);
+        }
+        completed++;
+        setToolStatus('mr', `Reading PDFs… (${completed}/${pdfFiles.length})`, { value: completed, max: pdfFiles.length });
       }
-      const docObj = { id, name: file.name, size: file.size, expanded: true, origCount: pdfjsDoc.numPages, pages };
-      documents.push(docObj);
-      const card = renderDoc(docObj);
-      generateThumbs(card, docObj);
+      updateSizePreview();
+      if (added) setToolStatus('mr', `${added} PDF${added === 1 ? '' : 's'} Added${added < pdfFiles.length ? `; ${pdfFiles.length - added} Skipped` : ''}`, { state: 'success' });
+      else setToolStatus('mr');
+    } finally {
+      setBusy(false);
     }
-    btn.classList.toggle('is-empty', totalPages() === 0);
-    updateSizePreview();
   });
-  const mrMaxEl = document.getElementById('mrMaxSize');
-  if (mrMaxEl) mrMaxEl.textContent = `Max file size per PDF: ${MAX_MERGE_MB} MB`;
+  const mrMaxEl = document.querySelector('#mrMaxSize .upload-size');
+  if (mrMaxEl) mrMaxEl.textContent = `${MAX_MERGE_MB} MB`;
 
   if (typeof Sortable !== 'undefined') {
     new Sortable(docList, { group: 'mr-docs', draggable: '.doc-card', handle: '.doc-handle', animation: 150, onEnd: syncFromDOM });
   }
 
   btn.addEventListener('click', async () => {
-    if (!totalPages()) return;
-    btn.disabled = true; btn.textContent = 'Merging…';
+    if (busy || !totalPages()) return;
+    if (mrErr) mrErr.hidden = true;
+    const total = totalPages();
+    let completed = 0;
+    setBusy(true);
+    btn.textContent = 'Merging…';
+    setToolStatus('mr', `Merging Pages… (0/${total})`, { value: 0, max: total });
     try {
+      await yieldToBrowser();
       const out = await PDFLib.PDFDocument.create();
       for (const d of documents) {
         for (const p of d.pages) {
           const src = docMap[p.homeDocId].srcPdf;
           const [copied] = await out.copyPages(src, [p.pageIdx]);
           out.addPage(copied);
+          completed++;
+          setToolStatus('mr', `Merging Pages… (${completed}/${total})`, { value: completed, max: total });
+          if (completed % 5 === 0) await yieldToBrowser();
         }
       }
+      setToolStatus('mr', 'Preparing Download…');
+      await yieldToBrowser();
       triggerDownload(new Blob([await out.save()], { type: 'application/pdf' }), 'merged.pdf');
-    } catch (e) { alert('Merge failed: ' + e.message); }
-    finally { btn.disabled = false; btn.textContent = 'Merge & download'; }
+      setToolStatus('mr', 'Download Started', { state: 'success' });
+    } catch (e) { setToolStatus('mr'); showMrError('Merge failed: ' + e.message); }
+    finally { setBusy(false); btn.textContent = 'Merge & Download'; }
   });
 
   setEmptyState();
-})(); } catch (e) { console.error('Merge/Reorder failed to init', e); }
+  syncControls();
+})(); } catch (e) { console.error('Merge/Reorder failed to init', e); throw e; }

@@ -153,8 +153,8 @@
         dEl.textContent = downTarg > 0 ? downTarg.toFixed(1) + ' Mbps' : '\u2014';
         uEl.textContent = upTarg > 0 ? upTarg.toFixed(1) + ' Mbps' : '\u2014';
         testRunning = false; finishing = false;
-        speedPhase.textContent = 'Test complete';
-        runBtn.disabled = false; runBtn.textContent = 'Run again';
+        speedPhase.textContent = 'Test Complete';
+        runBtn.disabled = false; runBtn.textContent = 'Run Again';
         draw();
         return;
       }
@@ -271,13 +271,13 @@
   // Orchestrates the full run: ping, then exactly PHASE_DURATION_MS of
   // download, then exactly PHASE_DURATION_MS of upload.
   async function runFullTest() {
-    speedPhase.textContent = 'Testing ping...';
+    speedPhase.textContent = 'Testing Ping...';
     await measureLatency();
     if (aborted) return;
 
     phase = 'down';
     testStart = performance.now();
-    speedPhase.textContent = 'Testing download...';
+    speedPhase.textContent = 'Testing Download...';
     const downMbps = await runDownloadTest(PHASE_DURATION_MS, (speed) => { downTarg = speed; });
     if (aborted) return;
     downTarg = downMbps > 0 ? downMbps : 0;
@@ -287,7 +287,7 @@
 
     phase = 'up';
     upStart = performance.now();
-    speedPhase.textContent = 'Testing upload...';
+    speedPhase.textContent = 'Testing Upload...';
     const upMbps = await runUploadTest(PHASE_DURATION_MS, (speed) => { upTarg = speed; });
     if (aborted) return;
     upTarg = upMbps > 0 ? upMbps : 0;
@@ -307,8 +307,8 @@
       aborted = true;
       testRunning = false;
       finishing = false;
-      this.textContent = 'Start test';
-      speedPhase.textContent = 'Test stopped';
+      this.textContent = 'Start Test';
+      speedPhase.textContent = 'Test Stopped';
       return;
     }
     aborted = false;
@@ -316,7 +316,7 @@
     testRunning = true;
     resetAll();
     noteEl.hidden = true;
-    speedPhase.textContent = 'Testing ping...';
+    speedPhase.textContent = 'Testing Ping...';
     requestAnimationFrame(tick);
     runFullTest();
   });

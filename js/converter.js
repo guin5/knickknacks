@@ -1,8 +1,9 @@
-import { formatBytes, getExt, triggerDownload, wireDropzone, loadScript, checkFileSize, MAX_CONVERT_MB, MAX_RASTER_MP } from './util.js';
+import { formatBytes, getExt, triggerDownload, wireDropzone, loadScript, checkFileSize, MAX_CONVERT_MB, MAX_RASTER_MP, setToolStatus, setFileToolBusy, yieldToBrowser } from './util.js';
 
 /* --- CONVERT FILES --- */
 try { (function() {
   let curr = null, sizes = {}, bmpCache = null;
+  let fileVersion = 0;
   const info = document.getElementById('cvFileInfo'), acts = document.getElementById('cvActions'), err = document.getElementById('cvError');
   const RASTER = ['png','jpg','jpeg','webp','bmp','gif','ico','tif','tiff','heic','heif'];
 
@@ -23,12 +24,12 @@ try { (function() {
 
   /* --- raster --- */
   async function getBitmap(f) {
-    if (bmpCache && bmpCache.key === f.name + ':' + f.size) return bmpCache.bmp;
+    if (bmpCache && bmpCache.file === f) return bmpCache.bmp;
     const ext = getExt(f.name); let blob = f;
     if (ext === 'heic' || ext === 'heif') blob = [].concat(await heic2any({ blob: f, toType: 'image/png' }))[0];
     else if (ext === 'tif' || ext === 'tiff') blob = await tiffToBlob(f);
     const bmp = await createImageBitmap(blob);
-    bmpCache = { key: f.name + ':' + f.size, bmp };
+    if (curr === f) bmpCache = { file: f, bmp };
     return bmp;
   }
   async function tiffToBlob(f) {
@@ -169,62 +170,109 @@ try { (function() {
   const EXT = { jpeg: 'jpg', png: 'png', webp: 'webp', md: 'md', txt: 'txt', pdf: 'pdf', csv: 'csv' };
 
   async function setFile(f) {
+    const version = ++fileVersion;
     curr = f; sizes = {}; bmpCache = null; clearError();
-    if (!f) { info.hidden = true; acts.innerHTML = ''; return; }
-    const sizeErr = checkFileSize(f, MAX_CONVERT_MB);
-    if (sizeErr) { showError(sizeErr); info.hidden = true; acts.innerHTML = ''; curr = null; return; }
-    info.hidden = false;
-    document.getElementById('cvFileName').textContent = f.name;
-    document.getElementById('cvFileMeta').textContent = formatBytes(f.size);
-    let ext = getExt(f.name);
-    if (!targetsFor(ext).length) {
-      const head = (await f.slice(0, 512).text()).trim().toLowerCase();
-      if (/^<!doctype html|<html|<\?xml/.test(head)) ext = 'html';
-    }
-    const targets = targetsFor(ext);
-    if (!targets.length) { showError('Unsupported file type' + (ext ? ` (.${ext})` : '') + '.'); acts.innerHTML = ''; return; }
-    if (RASTER.includes(ext)) {
-      let bmp;
-      try { bmp = await getBitmap(f); }
-      catch (e) { showError('Could not read this image: ' + (e.message || e)); acts.innerHTML = ''; curr = null; return; }
-      const px = bmp.width * bmp.height, maxPx = MAX_RASTER_MP * 1e6;
-      if (px > maxPx) {
-        bmp.close(); bmpCache = null;
-        showError(`Image is ${bmp.width}×${bmp.height} (${(px / 1e6).toFixed(0)} MP) — the limit for this tool is ${MAX_RASTER_MP} MP. Try a smaller or lower-resolution image.`);
-        acts.innerHTML = ''; curr = null; return;
+    acts.innerHTML = '';
+    setToolStatus('cv');
+    if (!f) { info.hidden = true; setFileToolBusy('cv', false); return; }
+    setFileToolBusy('cv', true);
+    try {
+      const sizeErr = checkFileSize(f, MAX_CONVERT_MB);
+      if (sizeErr) { showError(sizeErr); info.hidden = true; curr = null; return; }
+      info.hidden = false;
+      document.getElementById('cvFileName').textContent = f.name;
+      document.getElementById('cvFileMeta').textContent = formatBytes(f.size);
+      setToolStatus('cv', `Reading ${f.name}…`);
+      await yieldToBrowser();
+      if (version !== fileVersion) return;
+      let ext = getExt(f.name);
+      if (!targetsFor(ext).length) {
+        const head = (await f.slice(0, 512).text()).trim().toLowerCase();
+        if (/^<!doctype html|<html|<\?xml/.test(head)) ext = 'html';
+      }
+      if (version !== fileVersion) return;
+      const targets = targetsFor(ext);
+      if (!targets.length) { showError('Unsupported file type' + (ext ? ` (.${ext})` : '') + '.'); return; }
+      if (RASTER.includes(ext)) {
+        const bmp = await getBitmap(f);
+        if (version !== fileVersion) return;
+        const px = bmp.width * bmp.height, maxPx = MAX_RASTER_MP * 1e6;
+        if (px > maxPx) {
+          const width = bmp.width, height = bmp.height;
+          bmp.close(); bmpCache = null; curr = null;
+          showError(`Image is ${width}×${height} (${(px / 1e6).toFixed(0)} MP) — the limit for this tool is ${MAX_RASTER_MP} MP. Try a smaller or lower-resolution image.`);
+          return;
+        }
+      }
+      let completed = 0, successful = 0;
+      acts.innerHTML = targets.map(t => `<button class="format-btn calcing" data-fmt="${t.fmt}" disabled>${t.label}<span class="fmt-size">…</span></button>`).join('');
+      setToolStatus('cv', `Preparing Formats… (0/${targets.length})`, { value: 0, max: targets.length });
+      await yieldToBrowser();
+      if (version !== fileVersion) return;
+      await Promise.all(targets.map(async t => {
+        const btn = acts.querySelector(`.format-btn[data-fmt="${t.fmt}"]`);
+        try {
+          const blob = await produce(t.fmt, f);
+          if (version !== fileVersion) return;
+          sizes[t.fmt] = blob;
+          btn.querySelector('.fmt-size').textContent = ' · ' + formatBytes(blob.size);
+          successful++;
+        } catch (e) {
+          if (version !== fileVersion) return;
+          btn.querySelector('.fmt-size').textContent = ' · n/a';
+          btn.classList.add('failed');
+          btn.title = e.message || 'This format could not be prepared.';
+        } finally {
+          if (version === fileVersion) {
+            completed++;
+            btn.classList.remove('calcing');
+            setToolStatus('cv', `Preparing Formats… (${completed}/${targets.length})`, { value: completed, max: targets.length });
+          }
+        }
+      }));
+      if (version !== fileVersion) return;
+      acts.querySelectorAll('.format-btn:not(.failed)').forEach(btn => btn.disabled = false);
+      if (successful) setToolStatus('cv', targets.length === 1 ? 'Format Ready to Download' : `${successful} of ${targets.length} Formats Ready to Download`, { state: 'success' });
+      else { setToolStatus('cv'); showError('Could not prepare this file. Try another file or format.'); }
+    } catch (e) {
+      if (version === fileVersion) { setToolStatus('cv'); acts.innerHTML = ''; curr = null; showError('Could not read this file: ' + (e.message || e)); }
+    } finally {
+      if (version === fileVersion) {
+        if (!err.hidden) setToolStatus('cv');
+        setFileToolBusy('cv', false);
       }
     }
-    acts.innerHTML = targets.map(t => `<button class="format-btn" data-fmt="${t.fmt}">${t.label}<span class="fmt-size">…</span></button>`).join('');
-    targets.forEach(async t => {
-      const btn = acts.querySelector(`.format-btn[data-fmt="${t.fmt}"]`); if (!btn) return;
-      try {
-        const blob = await produce(t.fmt, f);
-        sizes[t.fmt] = blob;
-        const span = btn.querySelector('.fmt-size');
-        if (span) span.textContent = ' · ' + formatBytes(blob.size);
-        btn.classList.remove('calcing');
-      } catch (e) {
-        const span = btn.querySelector('.fmt-size');
-        if (span) span.textContent = ' · n/a';
-        btn.disabled = true; btn.classList.add('failed');
-        console.error('Preview failed for', t.fmt, e);
-      }
-    });
   }
 
   wireDropzone(document.getElementById('cvDropzone'), document.getElementById('cvFileInput'), document.getElementById('cvBrowseBtn'), files => setFile(files[0]));
-  const cvMaxEl = document.getElementById('cvMaxSize');
-  if (cvMaxEl) cvMaxEl.textContent = `Max file size: ${MAX_CONVERT_MB} MB`;
+  const cvMaxEl = document.querySelector('#cvMaxSize .upload-size');
+  if (cvMaxEl) cvMaxEl.textContent = `${MAX_CONVERT_MB} MB`;
   document.getElementById('cvClearBtn').addEventListener('click', () => setFile(null));
 
   acts.addEventListener('click', async e => {
     const btn = e.target.closest('.format-btn'); if (!btn || btn.disabled || !curr) return;
-    const fmt = btn.dataset.fmt, base = curr.name.replace(/\.[^.]+$/, '');
-    btn.disabled = true; btn.classList.add('calcing');
+    const version = fileVersion, file = curr;
+    const fmt = btn.dataset.fmt, base = file.name.replace(/\.[^.]+$/, '');
+    clearError();
+    setFileToolBusy('cv', true);
+    setToolStatus('cv', 'Preparing Download…');
+    acts.querySelectorAll('.format-btn').forEach(button => button.disabled = true);
+    btn.classList.add('calcing');
     try {
-      const blob = sizes[fmt] || await produce(fmt, curr);
+      await yieldToBrowser();
+      if (version !== fileVersion) return;
+      const blob = sizes[fmt] || await produce(fmt, file);
+      if (version !== fileVersion) return;
       triggerDownload(blob, `${base}.${EXT[fmt] || fmt}`);
-    } catch (er) { alert('Conversion error: ' + er.message); }
-    finally { btn.disabled = false; btn.classList.remove('calcing'); }
+      setToolStatus('cv', 'Download Started', { state: 'success' });
+    } catch (er) {
+      if (version === fileVersion) { setToolStatus('cv'); showError('Conversion error: ' + er.message); }
+    } finally {
+      if (version === fileVersion) {
+        setFileToolBusy('cv', false);
+        acts.querySelectorAll('.format-btn:not(.failed)').forEach(button => button.disabled = false);
+        btn.classList.remove('calcing');
+      }
+    }
   });
-})(); } catch (e) { console.error('Convert files failed to init', e); }
+})(); } catch (e) { console.error('Convert files failed to init', e); throw e; }

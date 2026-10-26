@@ -18,7 +18,7 @@ try { (function() {
         const now = new Date();
         let targetH = parseInt(h.value) % 12; if (ampm.value === 'PM') targetH += 12;
         if (now.getHours() === targetH && now.getMinutes() === parseInt(m.value) && now.getSeconds() === 0) {
-            clearInterval(intv); ringing = true; btn.textContent = 'Stop alarm';
+            clearInterval(intv); ringing = true; btn.textContent = 'Stop Alarm';
             playBeep(); ringIntv = setInterval(playBeep, 1200);
             if ('Notification' in window && Notification.permission === 'granted') new Notification("Alarm Ringing!");
         }
@@ -30,14 +30,14 @@ try { (function() {
 
         if (ringing) {
             clearInterval(ringIntv); ringing = false; active = false;
-            btn.textContent = 'Set alarm'; setInputsReadonly(false);
+            btn.textContent = 'Set Alarm'; setInputsReadonly(false);
             tipCtrl.hide();
         } else if (active) {
             clearInterval(intv); active = false;
-            btn.textContent = 'Set alarm'; setInputsReadonly(false);
+            btn.textContent = 'Set Alarm'; setInputsReadonly(false);
             tipCtrl.hide();
         } else {
-            active = true; btn.textContent = 'Cancel alarm'; setInputsReadonly(true);
+            active = true; btn.textContent = 'Cancel Alarm'; setInputsReadonly(true);
             intv = setInterval(checkAlarm, 1000);
             tipCtrl.show();
         }

@@ -36,6 +36,7 @@ try { (function() {
 
   big.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (document.fullscreenElement) return;
     tipCtrl.hide();
     if (tabClock.classList.contains('simple-mode')) {
       tabClock.classList.remove('simple-mode');

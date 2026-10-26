@@ -11,8 +11,14 @@ try { (function() {
 
   const tipCtrl = createFsTipController(document.getElementById('timerFsTip'));
 
+  function syncFullscreenButton() {
+    if (timerFsBtn) timerFsBtn.disabled = !running && !document.fullscreenElement?.contains(tabTimer);
+  }
+  document.addEventListener('fullscreenchange', syncFullscreenButton);
+
   timerInputs.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (document.fullscreenElement) return;
     if (running) { tabTimer.classList.toggle('simple-mode'); tipCtrl.hide(); }
   });
   tabTimer.addEventListener('click', (e) => {
@@ -32,16 +38,17 @@ try { (function() {
   function stopAlarm() {
       clearInterval(alarmInterval); alarmInterval = null; btn.textContent = 'Start'; running = false;
       tH.value = '00'; tM.value = '00'; tS.value = '00';
+      syncFullscreenButton();
   }
 
   function tk() { 
       if(rem <= 0) { 
-          clearInterval(intv); setInputsReadonly(false);
-          btn.textContent = 'Stop alarm';
+          clearInterval(intv); running = false; setInputsReadonly(false);
+          btn.textContent = 'Stop Alarm';
           tH.value = '00'; tM.value = '00'; tS.value = '00';
           playBeep(); alarmInterval = setInterval(playBeep, 1200);
           if ('Notification' in window && Notification.permission === 'granted') new Notification("Timer finished!");
-          if (timerFsBtn) timerFsBtn.disabled = true;
+          syncFullscreenButton();
           tipCtrl.hide();
           return; 
       } 
@@ -56,7 +63,7 @@ try { (function() {
       btn.textContent = 'Resume';
       running = false;
       setInputsReadonly(false);
-      if (timerFsBtn) timerFsBtn.disabled = true;
+      syncFullscreenButton();
       tipCtrl.hide();
   }
 
@@ -67,7 +74,7 @@ try { (function() {
       btn.textContent = 'Pause';
       setInputsReadonly(true);
       intv = setInterval(tk, 1000);
-      if (timerFsBtn) timerFsBtn.disabled = false;
+      syncFullscreenButton();
       tipCtrl.show();
   }
 
@@ -84,7 +91,7 @@ try { (function() {
       clearInterval(intv); if(alarmInterval) clearInterval(alarmInterval); alarmInterval = null;
       running = false; rem = 0; btn.textContent = 'Start'; setInputsReadonly(false);
       tH.value = '00'; tM.value = '00'; tS.value = '00';
-      if (timerFsBtn) timerFsBtn.disabled = true;
+      syncFullscreenButton();
       tipCtrl.hide();
   });
 })(); } catch (e) { console.error('Timer failed to init', e); }

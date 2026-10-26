@@ -1,5 +1,9 @@
 {
+  "scripts": {
+    "build": "esbuild js/app.js --bundle --format=iife --outfile=js/app.bundle.js"
+  },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "fallow": "^3.3.0"
   }
 }
