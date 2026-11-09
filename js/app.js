@@ -22,6 +22,10 @@ const CONVERT_SCRIPTS = [
   'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
   'https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js',
 ];
+const EPUB_SCRIPTS = [
+  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+  'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js',
+];
 
 function setupPdfWorker() {
   if (typeof pdfjsLib !== 'undefined') {
@@ -35,7 +39,9 @@ function loadTabModule(tabName) {
     ? { key: 'pdf', prefix: 'mr', label: 'PDF Tools', scripts: PDF_SCRIPTS, load: () => import('./pdf.js') }
     : tabName === 'files'
       ? { key: 'converter', prefix: 'cv', label: 'File Tools', scripts: CONVERT_SCRIPTS, load: () => import('./converter.js') }
-      : null;
+      : tabName === 'epub'
+        ? { key: 'epub', prefix: 'epub', label: 'Reader', scripts: EPUB_SCRIPTS, sequential: true, load: () => import('./epub.js') }
+        : null;
   if (tool) {
     if (!_tabLoads[tool.key]) {
       let loading = true;
@@ -43,7 +49,7 @@ function loadTabModule(tabName) {
       setToolStatus(tool.prefix, `Loading ${tool.label}…`, { state: 'loading', value: 0, max: tool.scripts.length });
       _tabLoads[tool.key] = loadScripts(tool.scripts, (value, max) => {
         if (loading) setToolStatus(tool.prefix, `Loading ${tool.label}… (${value}/${max})`, { state: 'loading', value, max });
-      }).then(() => {
+      }, { sequential: tool.sequential }).then(() => {
         setupPdfWorker();
         setToolStatus(tool.prefix, `Starting ${tool.label}…`, { state: 'loading' });
         return tool.load();
@@ -68,7 +74,7 @@ function loadTabModule(tabName) {
   }
 }
 
-[['cv', 'files'], ['mr', 'mr']].forEach(([prefix, tab]) => {
+[['cv', 'files'], ['mr', 'mr'], ['epub', 'epub']].forEach(([prefix, tab]) => {
   const drop = document.getElementById(`${prefix}Dropzone`);
   ['dragover', 'drop'].forEach(type => drop.addEventListener(type, e => {
     if (document.getElementById(`${prefix}FileInput`).disabled) e.preventDefault();
@@ -206,6 +212,7 @@ document.addEventListener('fullscreenchange', () => {
 // Only an empty fullscreen backdrop dismisses the view; tool controls stay usable.
 document.addEventListener('click', e => {
   const fsEl = document.fullscreenElement;
+  if (fsEl?.id === 'tab-epub') return;
   if (fsEl && (e.target === fsEl || e.target.matches('.panel.fs-active'))) {
     document.exitFullscreen();
   }

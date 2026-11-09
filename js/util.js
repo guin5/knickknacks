@@ -13,9 +13,13 @@ export function loadScript(url) {
   return cache[url];
 }
 loadScript._cache = {};
-export function loadScripts(urls, onProgress = () => {}) {
+export function loadScripts(urls, onProgress = () => {}, { sequential = false } = {}) {
   let completed = 0;
-  return Promise.all(urls.map(url => loadScript(url).then(() => onProgress(++completed, urls.length))));
+  const load = url => loadScript(url).then(() => onProgress(++completed, urls.length));
+  // Some browser libraries capture their dependencies when the script executes.
+  return sequential
+    ? urls.reduce((previous, url) => previous.then(() => load(url)), Promise.resolve())
+    : Promise.all(urls.map(load));
 }
 
 export function setToolStatus(prefix, message = '', { state = 'working', value = null, max = 1, retry = false } = {}) {

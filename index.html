@@ -31,6 +31,10 @@ try {
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg>
           Merge / Reorder
         </button>
+        <button type="button" class="tab-btn" data-tab="epub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5C9 3.5 5 3.5 2 5v15c3-1.5 7-1.5 10 .5 3-2 7-2 10-.5V5c-3-1.5-7-1.5-10 .5Z"/><path d="M12 5.5v15"/></svg>
+          Reader
+        </button>
         <button type="button" class="tab-btn" data-tab="words">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg>
           Words
@@ -73,6 +77,10 @@ try {
       <button type="button" class="home-tile" data-goto="mr" style="--tile:#8E5BD9">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="12" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" /><rect x="8.5" y="6.8" width="12" height="15" rx="2" fill="currentColor"/></svg></span>
         <span class="home-tile-label">Merge / Reorder</span>
+      </button>
+      <button type="button" class="home-tile" data-goto="epub" style="--tile:#8E5BD9">
+        <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5C9 3.5 5 3.5 2 5v15c3-1.5 7-1.5 10 .5 3-2 7-2 10-.5V5c-3-1.5-7-1.5-10 .5Z"/><path d="M12 5.5v15"/></svg></span>
+        <span class="home-tile-label">Reader</span>
       </button>
       <button type="button" class="home-tile" data-goto="words" style="--tile:#D97706">
         <span class="home-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M16 18l4 4M20 18l-4 4"/></svg></span>
@@ -170,6 +178,102 @@ try {
       </div>
       <div id="cvActions" class="format-grid"></div>
       <p class="note" id="cvError" role="alert" hidden></p>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tab-epub" hidden>
+    <div class="panel epub-panel">
+      <div class="dropzone" id="epubDropzone" role="group" aria-labelledby="epubUploadTitle" aria-describedby="epubFormats epubMaxSize epubPrivacy" aria-busy="true">
+        <p class="dropzone-title" id="epubUploadTitle">Drag and drop an EPUB here</p>
+        <button type="button" id="epubBrowseBtn" class="btn-browse" aria-describedby="epubFormats epubMaxSize epubPrivacy" disabled>Choose File</button>
+        <p class="upload-details">
+          <span id="epubFormats">EPUB books</span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="epubMaxSize">Max <span class="upload-size">50 MB</span></span>
+          <span class="upload-separator" aria-hidden="true">&middot;</span>
+          <span id="epubPrivacy">Read Locally</span>
+        </p>
+        <input type="file" id="epubFileInput" accept=".epub,application/epub+zip" hidden disabled>
+      </div>
+      <div class="tool-status" id="epubStatus" role="status" aria-live="polite" hidden>
+        <span class="tool-status-message" id="epubStatusMessage"></span>
+        <button type="button" class="tool-retry" hidden>Retry</button>
+        <progress class="tool-progress" max="1" aria-labelledby="epubStatusMessage"></progress>
+      </div>
+      <p class="note" id="epubError" role="alert" hidden></p>
+      <section class="epub-recents" id="epubRecents" aria-labelledby="epubRecentsTitle" hidden>
+        <h2 id="epubRecentsTitle">Recent books</h2>
+        <ul class="epub-recent-list" id="epubRecentList"></ul>
+      </section>
+      <div class="epub-reader" id="epubReader" hidden>
+        <div class="epub-reading-shell">
+          <button type="button" class="ctrl-btn epub-options-toggle" id="epubOptionsBtn" aria-label="Open reading options" title="Reading options" aria-controls="epubSettings" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="epub-viewport" id="epubViewport" role="region" aria-label="Scrollable book" aria-describedby="epubHint" tabindex="0"></div>
+          <div class="epub-progress-track" id="epubBookProgress" role="progressbar" aria-label="Reading progress" aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Start of book">
+            <span class="epub-progress-fill" id="epubBookProgressFill"></span>
+          </div>
+          <button type="button" class="epub-options-backdrop" id="epubOptionsBackdrop" aria-label="Close reading options" tabindex="-1" hidden></button>
+          <aside class="epub-options" id="epubSettings" role="dialog" aria-modal="true" aria-labelledby="epubOptionsTitle" hidden>
+            <div class="epub-options-heading">
+              <h2 id="epubOptionsTitle">Reading options</h2>
+              <button type="button" class="icon-btn" id="epubOptionsClose" aria-label="Close reading options">&times;</button>
+            </div>
+            <div class="epub-book-info">
+              <h2 id="epubTitle"></h2>
+              <p id="epubAuthor"></p>
+            </div>
+            <label class="epub-chapter" for="epubChapters">Chapter
+              <select id="epubChapters"></select>
+            </label>
+            <div class="epub-size-setting">
+              <span>Text size</span>
+              <div class="epub-font-controls" role="group" aria-label="Text size">
+                <button type="button" class="ctrl-btn" id="epubFontDown" aria-label="Decrease text size">A&minus;</button>
+                <output id="epubFontSize" aria-live="polite" aria-label="Text size">100%</output>
+                <button type="button" class="ctrl-btn" id="epubFontUp" aria-label="Increase text size">A+</button>
+              </div>
+            </div>
+            <div class="epub-preferences">
+              <label for="epubFontFamily">Font
+                <select id="epubFontFamily">
+                  <option value="book">Book default</option>
+                  <option value="georgia">Georgia</option>
+                  <option value="palatino">Palatino</option>
+                  <option value="sans">Sans serif</option>
+                  <option value="mono">Monospace</option>
+                </select>
+              </label>
+              <label for="epubTheme">Color
+                <select id="epubTheme">
+                  <option value="auto">Match site</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="sepia">Sepia</option>
+                  <option value="sage">Sage</option>
+                </select>
+              </label>
+              <label for="epubAlignment">Alignment
+                <select id="epubAlignment">
+                  <option value="left">Left</option>
+                  <option value="justify">Justified</option>
+                </select>
+              </label>
+              <label class="epub-width-control" for="epubTextWidth">
+                <span>Text width <output id="epubTextWidthValue" for="epubTextWidth">90%</output></span>
+                <input type="range" id="epubTextWidth" min="40" max="100" step="5" value="90">
+              </label>
+            </div>
+            <p class="epub-reader-note" id="epubProgress" role="status" aria-live="polite"></p>
+            <p class="epub-reader-note" id="epubHint">Scroll to read. Jump between chapters using the menu.</p>
+            <div class="epub-heading-actions">
+              <button type="button" class="ctrl-btn" id="epubFullscreenBtn" aria-pressed="false">Enter Fullscreen</button>
+              <button type="button" class="ctrl-btn" id="epubCloseBtn">Close Book</button>
+            </div>
+          </aside>
+        </div>
+      </div>
     </div>
   </section>
 
