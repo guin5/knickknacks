@@ -1003,13 +1003,19 @@ ${p}`).join("\n\n")], { type: "text/plain" });
     }
   }
   function readingPalette() {
-    if (theme.value !== "auto") return PALETTES[theme.value];
-    const styles = getComputedStyle(document.documentElement);
+    const root = document.documentElement;
+    const scheme = theme.value === "auto" ? root.dataset.theme : theme.value;
+    if (theme.value !== "auto" && scheme !== "dark") return PALETTES[scheme];
+    const styles = getComputedStyle(root);
+    if (scheme === "dark") {
+      const ink = styles.getPropertyValue("--dark-text").trim();
+      return { paper: styles.getPropertyValue("--dark-bg").trim(), ink, link: ink, scheme };
+    }
     return {
       paper: styles.getPropertyValue("--surface").trim(),
       ink: styles.getPropertyValue("--text").trim(),
-      link: document.documentElement.dataset.theme === "dark" ? PALETTES.dark.link : styles.getPropertyValue("--accent").trim(),
-      scheme: document.documentElement.dataset.theme
+      link: styles.getPropertyValue("--accent").trim(),
+      scheme
     };
   }
   function contentFonts(contents) {
@@ -1040,6 +1046,9 @@ ${p}`).join("\n\n")], { type: "text/plain" });
     const availableWidth = rendition.manager.viewSettings.width || viewport.clientWidth;
     for (const { element, indent } of contentFonts(contents)) {
       element.style.setProperty("color", element.localName === "a" ? palette.link : "inherit", "important");
+      if (element.localName === "a" && element.hasAttribute("href")) {
+        element.style.setProperty("text-decoration-line", "underline", "important");
+      }
       element.style.setProperty("background-color", "transparent", "important");
       if (element.matches("body, p, li, blockquote, div, section, article, td")) {
         element.style.setProperty("text-align", alignment.value, "important");
@@ -1385,12 +1394,10 @@ ${p}`).join("\n\n")], { type: "text/plain" });
   }
   function handlePageClick(event) {
     if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    if (options.open) {
+    if (options.open || appearance.open) {
       options.close();
-      return;
-    }
-    if (appearance.open) {
       appearance.open = false;
+      focusViewport();
       return;
     }
     if (event.target.closest?.("a, button, input, select, textarea") || event.view?.getSelection()?.toString()) return;
@@ -1695,7 +1702,6 @@ ${p}`).join("\n\n")], { type: "text/plain" });
       };
       PALETTES = {
         light: { paper: "#FFFFFF", ink: "#262626", link: "#1B5A85", scheme: "light" },
-        dark: { paper: "#16181E", ink: "#E8EAEF", link: "#72B9E8", scheme: "dark" },
         "black-gray": { paper: "#000000", ink: "#B3B3B3", link: "#82C9FF", scheme: "dark" },
         "black-white": { paper: "#000000", ink: "#FFFFFF", link: "#82C9FF", scheme: "dark" },
         sepia: { paper: "#F4ECD8", ink: "#4A3B2B", link: "#875020", scheme: "light" }
@@ -1723,7 +1729,7 @@ ${p}`).join("\n\n")], { type: "text/plain" });
         const savedFont = localStorage.getItem(FONT_FAMILY_KEY);
         if (Object.hasOwn(FONT_FAMILIES, savedFont)) fontFamily.value = savedFont;
         const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme === "auto" || Object.hasOwn(PALETTES, savedTheme)) theme.value = savedTheme;
+        if (savedTheme === "auto" || savedTheme === "dark" || Object.hasOwn(PALETTES, savedTheme)) theme.value = savedTheme;
         const savedWidth = Number(localStorage.getItem(WIDTH_KEY));
         if (savedWidth >= 40 && savedWidth <= 100) textWidth.value = String(savedWidth);
         const savedLayout = localStorage.getItem(LAYOUT_KEY);
@@ -3097,22 +3103,6 @@ ${p}`).join("\n\n")], { type: "text/plain" });
   tabButtons.forEach((btn) => btn.addEventListener("click", () => {
     navigateToTab(btn.dataset.tab);
   }));
-  document.querySelectorAll(".home-tile").forEach((tile) => tile.addEventListener("click", () => {
-    navigateToTab(tile.dataset.goto);
-  }));
-  var homeFab = document.getElementById("homeFab");
-  function goHome() {
-    if (location.hash.slice(1) === "home") {
-      activateTab("home", false);
-      return;
-    }
-    try {
-      location.hash = "home";
-    } catch (e) {
-      activateTab("home", false);
-    }
-  }
-  homeFab.addEventListener("click", goHome);
   window.addEventListener("hashchange", () => activateTab(location.hash.slice(1), true));
   var startTab = activateTab(location.hash.slice(1), false);
   if (location.hash.slice(1) !== startTab) {
