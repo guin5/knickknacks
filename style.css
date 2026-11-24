@@ -1,13 +1,15 @@
   :root {
     color-scheme: dark;
     /* Dark Mode Palette (Default) */
-    --bg: #000000;
+    --dark-bg: #000000;
+    --dark-text: #A6A6A6;
+    --bg: var(--dark-bg);
     --surface: #121212;
-    --text: #F5F5F5;
+    --text: var(--dark-text);
     --ghost: #666666;
-    --muted: #C5C5C5;
+    --muted: #858585;
     --border: #383838;
-    --accent: #D9D9D9;
+    --accent: var(--dark-text);
     --accent-soft: #242424;
     --action: var(--accent);
     --on-accent: #141414;
@@ -94,10 +96,17 @@
   /* Tab bar */
   .tabbar { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
   .tab-links { display: flex; flex: 1; min-width: 0; align-items: center; gap: 5px; flex-wrap: wrap; }
-  .tab-btn { flex: none; display: flex; align-items: center; gap: 6px; font: inherit; font-size: 14px; font-weight: 500; letter-spacing: 0.3px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 8px 12px; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
+  .tab-btn { flex: none; display: flex; align-items: center; gap: 6px; font: inherit; font-size: 14px; font-weight: 500; letter-spacing: 0.3px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 8px 12px; cursor: pointer; white-space: nowrap; text-underline-offset: 0.25em; }
   .tab-btn svg { width: 16px; height: 16px; flex: none; }
-  .tab-btn:hover { background: var(--accent-soft); color: var(--text); }
-  .tab-btn.active { background: var(--accent); color: var(--on-accent); }
+  @media (hover: hover) {
+    .tab-btn:not([aria-current]):hover {
+      text-decoration: underline 1px color-mix(in srgb, currentColor 70%, var(--bg));
+    }
+  }
+  .tab-btn[aria-current="page"] {
+    color: var(--text);
+    text-decoration: underline 2px;
+  }
 
   .tab-panel { display: block; }
   .tab-panel[hidden] { display: none; }
@@ -105,14 +114,13 @@
   /* Homepage directory */
   body:has(#tab-home:not([hidden])) { padding: clamp(48px, 16vh, 152px) 24px 64px; }
   .page:has(#tab-home:not([hidden])) { max-width: 70rem; }
-  .page:has(#tab-home:not([hidden])) .tabbar,
-  .page:has(#tab-home:not([hidden])) .home-fab { display: none; }
+  .page:has(#tab-home:not([hidden])) .tabbar { display: none; }
   .page:has(#tab-home:not([hidden])) .header-group {
     width: auto;
-    margin: 0 0 clamp(64px, 19.5vh, 184px);
+    margin: 0 0 clamp(48px, 10vh, 96px);
   }
   .page:has(#tab-home:not([hidden])) h1 {
-    font-size: clamp(54px, 5vw, 70px);
+    font-size: clamp(2.625rem, 2rem + 2vw, 3.5rem);
     line-height: 1;
   }
   .home-grid:not([hidden]) {
@@ -152,7 +160,7 @@
 
   @media (max-width: 720px) {
     body:has(#tab-home:not([hidden])) { padding-block-start: 56px; }
-    .page:has(#tab-home:not([hidden])) .header-group { margin-block-end: 64px; }
+    .page:has(#tab-home:not([hidden])) .header-group { margin-block-end: 40px; }
     .home-group h2 { margin-block-end: 24px; }
     .home-grid:not([hidden]) { grid-template-columns: minmax(0, 1fr); padding-inline-start: 0; }
     .home-group ul { gap: 20px; }
@@ -305,7 +313,8 @@
   .epub-viewport { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: var(--epub-paper, var(--surface)); }
   .epub-viewport .epub-container { overscroll-behavior-y: contain; scrollbar-gutter: stable; }
   .epub-reader:is([data-layout="single"], [data-layout="spread"]) .epub-container { scrollbar-width: none; scrollbar-gutter: auto; }
-  .epub-reader:is([data-layout="single"], [data-layout="spread"]) .epub-viewport iframe { outline: none; clip-path: inset(1px); }
+  .epub-viewport iframe, .epub-viewport.programmatic-focus { outline: none; }
+  .epub-reader:is([data-layout="single"], [data-layout="spread"]) .epub-viewport iframe { clip-path: inset(1px); }
   .epub-viewport .epub-final-section { min-height: 100%; }
   .epub-viewport:focus-visible:not(.programmatic-focus), .epub-reader select:focus-visible, .epub-width-control input:focus-visible, .epub-search-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .epub-bookmarks[hidden] { display: none; }
@@ -347,6 +356,7 @@
   .epub-recent-remove { flex: none; width: 32px; height: 32px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font: inherit; font-size: 20px; opacity: .55; cursor: pointer; }
   .epub-recent-remove:hover:not(:disabled), .epub-recent-remove:focus-visible { color: var(--text); background: var(--bg); opacity: 1; }
   .epub-recent button:disabled { cursor: progress; opacity: .5; }
+  #tab-epub { font-family: var(--mono); }
   body:has(#tab-epub:not([hidden]) #epubReader:not([hidden])) { overflow: hidden; }
   .page:has(#tab-epub:not([hidden]) #epubReader:not([hidden])) > .header-group { visibility: hidden; }
   #tab-epub:not([hidden]):has(#epubReader:not([hidden])) { position: fixed; inset: 0; z-index: 1100; background: var(--surface); }
@@ -638,42 +648,6 @@
 
   .btn-speed { display: block; margin: 20px auto 0; padding: 10px 30px; font: inherit; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; color: var(--on-accent); background: var(--accent); border: none; border-radius: 10px; cursor: pointer; }
   .btn-speed:disabled { opacity: 0.7; cursor: not-allowed; }
-
-  /* Floating home button — bottom middle, visible on tool pages. */
-  .home-fab {
-    position: fixed;
-    bottom: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    height: 38px;
-    padding: 0 16px;
-    gap: 7px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: var(--on-accent);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    z-index: 1001;
-    transition: transform .15s ease, background .15s ease;
-    bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-  .home-fab:hover { transform: translateX(-50%) scale(1.06); }
-  .home-fab:active { transform: translateX(-50%) scale(0.95); }
-  .home-fab svg { width: 18px; height: 18px; flex: none; }
-  .home-fab-label { line-height: 1; }
-  .tab-panel.simple-mode ~ .home-fab,
-  .tab-panel:has(.panel.fs-active) ~ .home-fab,
-  #tab-epub:not([hidden]):has(#epubReader:not([hidden])) ~ .home-fab,
-  .home-fab[hidden] { display: none; }
 
   /* Mobile / small-screen adjustments */
 
