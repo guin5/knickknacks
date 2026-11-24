@@ -2,8 +2,8 @@
 
 Open `index.html` in a browser, or serve this directory with a static web server.
 The checked-in `js/app.bundle.js` supports both ways of opening the site.
-File conversion, PDF tools, and the EPUB reader load their third-party libraries on demand and
-require an internet connection.
+File conversion and PDF tools require an internet connection to load their libraries.
+The EPUB reader loads its libraries from the site.
 
 ## EPUB reader
 

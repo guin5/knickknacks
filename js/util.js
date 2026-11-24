@@ -5,7 +5,7 @@ export function loadScript(url) {
   cache[url] = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = url;
-    s.crossOrigin = 'anonymous';
+    if (new URL(s.src).origin !== location.origin) s.crossOrigin = 'anonymous';
     s.onload = resolve;
     s.onerror = () => { delete cache[url]; reject(new Error('Failed to load ' + url)); };
     document.head.appendChild(s);

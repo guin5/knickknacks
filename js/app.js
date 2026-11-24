@@ -23,8 +23,8 @@ const CONVERT_SCRIPTS = [
   'https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js',
 ];
 const EPUB_SCRIPTS = [
-  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-  'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js',
+  './vendor/epub/jszip-3.10.1.min.js',
+  './vendor/epub/epubjs-0.3.93.min.js',
 ];
 
 function setupPdfWorker() {

@@ -50,7 +50,7 @@
     cache[url] = new Promise((resolve, reject) => {
       const s = document.createElement("script");
       s.src = url;
-      s.crossOrigin = "anonymous";
+      if (new URL(s.src).origin !== location.origin) s.crossOrigin = "anonymous";
       s.onload = resolve;
       s.onerror = () => {
         delete cache[url];
@@ -2980,8 +2980,8 @@ ${p}`).join("\n\n")], { type: "text/plain" });
     "https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"
   ];
   var EPUB_SCRIPTS = [
-    "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
-    "https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"
+    "./vendor/epub/jszip-3.10.1.min.js",
+    "./vendor/epub/epubjs-0.3.93.min.js"
   ];
   function setupPdfWorker() {
     if (typeof pdfjsLib !== "undefined") {
