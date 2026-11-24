@@ -157,10 +157,6 @@ tabButtons.forEach(btn => btn.addEventListener('click', () => {
   navigateToTab(btn.dataset.tab);
 }));
 
-document.querySelectorAll('.home-tile').forEach(tile => tile.addEventListener('click', () => {
-  navigateToTab(tile.dataset.goto);
-}));
-
 const homeFab = document.getElementById('homeFab');
 function goHome() {
   if (location.hash.slice(1) === 'home') { activateTab('home', false); return; }

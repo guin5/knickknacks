@@ -3097,9 +3097,6 @@ ${p}`).join("\n\n")], { type: "text/plain" });
   tabButtons.forEach((btn) => btn.addEventListener("click", () => {
     navigateToTab(btn.dataset.tab);
   }));
-  document.querySelectorAll(".home-tile").forEach((tile) => tile.addEventListener("click", () => {
-    navigateToTab(tile.dataset.goto);
-  }));
   var homeFab = document.getElementById("homeFab");
   function goHome() {
     if (location.hash.slice(1) === "home") {
