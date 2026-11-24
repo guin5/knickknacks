@@ -14,23 +14,40 @@ const textWidth = document.getElementById('epubTextWidth');
 const widthOutput = document.getElementById('epubTextWidthValue');
 const alignment = document.getElementById('epubAlignment');
 const close = document.getElementById('epubCloseBtn');
-const fullscreen = document.getElementById('epubFullscreenBtn');
+const layoutButton = document.getElementById('epubLayoutBtn');
+const appearance = document.getElementById('epubAppearance');
+const searchToggle = document.getElementById('epubSearchBtn');
+const searchPanel = document.querySelector('.epub-search-panel');
+const searchForm = document.getElementById('epubSearchForm');
+const searchInput = document.getElementById('epubSearchInput');
+const searchStatus = document.getElementById('epubSearchStatus');
+const searchResults = document.getElementById('epubSearchResults');
+const toolbar = document.querySelector('.epub-toolbar');
+const contentsToggle = document.getElementById('epubContentsBtn');
+const bookmarkButton = document.getElementById('epubBookmarkBtn');
+const bookmarkNotice = document.getElementById('epubBookmarkNotice');
+const bookmarkSection = document.getElementById('epubBookmarks');
+const bookmarkList = document.getElementById('epubBookmarkList');
+const optionsTitle = document.getElementById('epubOptionsTitle');
+let layout = 'scroll';
+let pageTurning = false;
+let queuedPageTurn = 0;
+const hint = document.getElementById('epubHint');
 const smaller = document.getElementById('epubFontDown');
 const larger = document.getElementById('epubFontUp');
 const fontOutput = document.getElementById('epubFontSize');
 const progress = document.getElementById('epubProgress');
-const bookProgress = document.getElementById('epubBookProgress');
-const progressFill = document.getElementById('epubBookProgressFill');
 const options = document.getElementById('epubSettings');
-const optionsToggle = document.getElementById('epubOptionsBtn');
 const optionsClose = document.getElementById('epubOptionsClose');
-const optionsBackdrop = document.getElementById('epubOptionsBackdrop');
 const recents = document.getElementById('epubRecents');
 const recentList = document.getElementById('epubRecentList');
 const FONT_KEY = 'knickknacks-epub-font-size';
 const FONT_FAMILY_KEY = 'knickknacks-epub-font-family';
 const THEME_KEY = 'knickknacks-epub-theme';
 const WIDTH_KEY = 'knickknacks-epub-text-width';
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let pageSlide;
+const LAYOUT_KEY = 'knickknacks-epub-layout';
 const ALIGNMENT_KEY = 'knickknacks-epub-alignment';
 const FONT_FAMILIES = {
   book: '',
@@ -42,13 +59,18 @@ const FONT_FAMILIES = {
 const PALETTES = {
   light: { paper: '#FFFFFF', ink: '#262626', link: '#1B5A85', scheme: 'light' },
   dark: { paper: '#16181E', ink: '#E8EAEF', link: '#72B9E8', scheme: 'dark' },
+  'black-gray': { paper: '#000000', ink: '#B3B3B3', link: '#82C9FF', scheme: 'dark' },
+  'black-white': { paper: '#000000', ink: '#FFFFFF', link: '#82C9FF', scheme: 'dark' },
   sepia: { paper: '#F4ECD8', ink: '#4A3B2B', link: '#875020', scheme: 'light' },
-  sage: { paper: '#E7EFDF', ink: '#2E3E2F', link: '#356742', scheme: 'light' },
 };
 const MAX_EPUB_MB = 50;
 let book = null, rendition = null, location = null, positionKey = '', busy = false;
+let bookmarks = [];
+const sessionBookmarks = new Map();
+const sessionRemovedBookmarks = new Set();
+let currentFile = null;
+let searchGeneration = 0;
 let fontData = new WeakMap();
-let nativeFullscreen = false;
 let stableCfi = '', resizeAnchor = '', pendingResize = null, resizing = false;
 let fontSize = 100;
 try {
@@ -60,6 +82,8 @@ try {
   if (savedTheme === 'auto' || Object.hasOwn(PALETTES, savedTheme)) theme.value = savedTheme;
   const savedWidth = Number(localStorage.getItem(WIDTH_KEY));
   if (savedWidth >= 40 && savedWidth <= 100) textWidth.value = String(savedWidth);
+  const savedLayout = localStorage.getItem(LAYOUT_KEY);
+  if (savedLayout === 'single' || savedLayout === 'spread') layout = savedLayout;
   const savedAlignment = localStorage.getItem(ALIGNMENT_KEY);
   if (savedAlignment === 'left' || savedAlignment === 'justify') alignment.value = savedAlignment;
 } catch (e) { /* Reading still works when storage is unavailable. */ }
@@ -72,16 +96,27 @@ function showError(message = '') {
 }
 
 function updateControls() {
-  chapters.disabled = busy || !rendition || !chapters.options.length;
-  fontFamily.disabled = busy || !rendition;
-  theme.disabled = busy || !rendition;
-  textWidth.disabled = busy || !rendition;
-  alignment.disabled = busy || !rendition;
-  close.disabled = busy;
-  fullscreen.disabled = busy || !rendition;
-  smaller.disabled = busy || !rendition || fontSize <= 80;
-  larger.disabled = busy || !rendition || fontSize >= 200;
-  recentList.querySelectorAll('button').forEach(button => { button.disabled = busy; });
+  const controlsBusy = busy && !pageTurning;
+  for (const chapter of chapters.querySelectorAll("button")) chapter.disabled = controlsBusy || !rendition;
+  fontFamily.disabled = controlsBusy || !rendition;
+  theme.disabled = controlsBusy || !rendition;
+  textWidth.disabled = controlsBusy || !rendition || layout !== 'scroll';
+  alignment.disabled = controlsBusy || !rendition;
+  close.disabled = controlsBusy;
+  bookmarkButton.disabled = controlsBusy || !rendition || !location?.start?.cfi;
+  updateBookmarkState();
+  layoutButton.disabled = controlsBusy || !rendition;
+  const labels = { scroll: 'Continuous scroll', single: 'One page', spread: 'Two pages' };
+  const next = { scroll: 'single', single: 'spread', spread: 'scroll' };
+  const layoutLabel = 'Layout: ' + labels[layout] + '. Switch to ' + labels[next[layout]].toLowerCase();
+  layoutButton.setAttribute('aria-label', layoutLabel);
+  layoutButton.title = layoutLabel;
+  layoutButton.querySelectorAll('[data-layout-icon]').forEach(icon => {
+    icon.toggleAttribute('hidden', icon.dataset.layoutIcon !== layout);
+  });
+  smaller.disabled = controlsBusy || !rendition || fontSize <= 80;
+  larger.disabled = controlsBusy || !rendition || fontSize >= 200;
+  recentList.querySelectorAll('button').forEach(button => { button.disabled = controlsBusy; });
 }
 
 async function refreshRecentBooks() {
@@ -128,59 +163,15 @@ function setBusy(value) {
   if (!value) flushReaderResize();
 }
 
+function focusViewport() {
+  viewport.classList.add('programmatic-focus');
+  viewport.focus({ preventScroll: true });
+}
+
 function syncLocation() {
   if (!book || !rendition?.manager?.isRendered()) return;
   const currentLocation = rendition.currentLocation();
   if (currentLocation?.start) updateLocation(book, currentLocation);
-}
-
-function setFullscreenLayout(enabled) {
-  const changed = tab.classList.contains('epub-fullscreen') !== enabled;
-  if (changed && !busy) syncLocation();
-  tab.classList.toggle('epub-fullscreen', enabled);
-  fullscreen.textContent = enabled ? 'Exit Fullscreen' : 'Enter Fullscreen';
-  fullscreen.setAttribute('aria-pressed', String(enabled));
-  if (changed) queueReaderResize(viewport.clientWidth, viewport.clientHeight);
-}
-
-function enterFullscreen() {
-  if (tab.hidden) return;
-  setFullscreenLayout(true);
-  // Request while the file selection/recent-book click still has user activation.
-  // The full-window layout also works in browsers or embeds without the Fullscreen API.
-  if (tab.requestFullscreen && document.fullscreenElement !== tab) {
-    try { Promise.resolve(tab.requestFullscreen()).catch(() => {}); } catch (e) { /* Keep the full-window reader. */ }
-  }
-}
-
-function exitFullscreen() {
-  setFullscreenLayout(false);
-  if (document.fullscreenElement === tab && document.exitFullscreen) {
-    try { Promise.resolve(document.exitFullscreen()).catch(() => {}); } catch (e) { /* The regular layout is already restored. */ }
-  }
-}
-
-function exitOnEscape(event) {
-  if (event.key !== 'Escape' || tab.hidden) return false;
-  if (!options.hidden) {
-    event.preventDefault();
-    setOptionsOpen(false);
-    return true;
-  }
-  if (!tab.classList.contains('epub-fullscreen')) return false;
-  event.preventDefault();
-  exitFullscreen();
-  return true;
-}
-
-function setOptionsOpen(open, restoreFocus = true) {
-  options.hidden = !open;
-  optionsBackdrop.hidden = !open;
-  optionsToggle.setAttribute('aria-expanded', String(open));
-  optionsToggle.inert = open;
-  viewport.inert = open;
-  if (open) optionsClose.focus({ preventScroll: true });
-  else if (restoreFocus && !reader.hidden) optionsToggle.focus({ preventScroll: true });
 }
 
 function readingSections(currentBook) {
@@ -188,7 +179,19 @@ function readingSections(currentBook) {
 }
 
 function resetBook() {
-  setOptionsOpen(false, false);
+  searchGeneration++;
+  currentFile = null;
+  searchInput.value = '';
+  searchResults.replaceChildren();
+  searchStatus.textContent = '';
+  bookmarks = [];
+  bookmarkList.replaceChildren();
+  bookmarkSection.hidden = true;
+  bookmarkNotice.hidden = true;
+  options.close();
+  appearance.open = false;
+  toolbar.classList.remove('is-hidden');
+  pageSlide?.cancel();
   // Clearing the reference first also ignores late location events from an old book.
   const oldBook = book;
   book = null;
@@ -200,14 +203,10 @@ function resetBook() {
   pendingResize = null;
   resizing = false;
   fontData = new WeakMap();
-  exitFullscreen();
   if (oldBook) oldBook.destroy();
   viewport.replaceChildren();
   chapters.replaceChildren();
   progress.textContent = '';
-  progressFill.style.transform = 'scaleX(0)';
-  bookProgress.setAttribute('aria-valuenow', '0');
-  bookProgress.setAttribute('aria-valuetext', 'Start of book');
   reader.hidden = true;
   dropzone.hidden = false;
   recents.hidden = recentList.children.length === 0;
@@ -285,9 +284,11 @@ function styleContents(contents) {
       'max-width': 'none !important',
       // EPUB.js initially measures a zero-width iframe. A concrete text width prevents
       // a huge temporary height and the resulting scroll jumps when its iframe expands.
-      width: `${availableWidth * Number(textWidth.value) / 100}px !important`,
-      margin: '0 auto !important',
-      padding: '24px clamp(16px, 4vw, 40px) !important',
+      ...(reader.dataset.layout === 'scroll' && {
+        width: `${availableWidth * Number(textWidth.value) / 100}px !important`,
+        margin: '0 auto !important',
+        padding: '24px clamp(16px, 4vw, 40px) !important',
+      }),
       'box-sizing': 'border-box !important',
       'overflow-wrap': 'anywhere',
     },
@@ -300,85 +301,63 @@ function applyTheme() {
   const palette = readingPalette();
   viewport.style.setProperty('--epub-paper', palette.paper);
   reader.style.setProperty('--epub-paper', palette.paper);
-  reader.style.setProperty('--epub-link', palette.link);
+  reader.style.setProperty('--epub-ink', palette.ink);
   viewport.style.setProperty('color-scheme', palette.scheme);
   if (rendition) rendition.getContents().forEach(styleContents);
 }
 
 function populateChapters(currentBook, navigation) {
-  const addItems = (items, depth = 0) => {
-    items.forEach(item => {
-      if (item.href && currentBook.spine.get(item.href)) {
-        const option = document.createElement('option');
-        option.value = item.href;
-        option.textContent = `${'— '.repeat(depth)}${item.label.trim() || 'Untitled chapter'}`;
-        chapters.appendChild(option);
-      }
-      if (item.subitems?.length) addItems(item.subitems, depth + 1);
-    });
-  };
-  addItems(navigation.toc || []);
-  if (!chapters.options.length) {
-    readingSections(currentBook).forEach((section, index) => {
-      const option = document.createElement('option');
-      option.value = section.href;
-      option.textContent = `Section ${index + 1}`;
-      chapters.appendChild(option);
-    });
+  function appendChapter(href, label, depth) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.href = href;
+    button.textContent = label;
+    button.style.setProperty('--chapter-depth', String(Math.min(depth, 6)));
+    item.append(button);
+    chapters.append(item);
   }
+  function addItems(items, depth) {
+    for (const item of items) {
+      if (item.href && currentBook.spine.get(item.href)) appendChapter(item.href, item.label.trim() || 'Untitled chapter', depth);
+      if (item.subitems?.length) addItems(item.subitems, depth + 1);
+    }
+  }
+  addItems(navigation.toc || [], 0);
+  if (!chapters.children.length) {
+    readingSections(currentBook).forEach((section, index) => appendChapter(section.href, "Section " + (index + 1), 0));
+  }
+}
+
+function currentChapter() {
+  return chapters.querySelector('[aria-current]');
 }
 
 function updateLocation(currentBook, currentLocation) {
   if (book !== currentBook || !currentLocation?.start) return;
   location = currentLocation;
   const href = location.start.href.split('#')[0];
-  if (chapters.value.split('#')[0] !== href) {
-    const option = Array.from(chapters.options).find(item => item.value.split('#')[0] === href);
-    chapters.value = option?.value || '';
+  const previous = currentChapter();
+  const entries = Array.from(chapters.querySelectorAll('button')).filter(button => button.dataset.href.split('#')[0] === href);
+  const view = entries.length > 1 && rendition.views().all().find(item => item.section.index === location.start.index);
+  const compare = view?.contents && new window.ePub.CFI();
+  const current = compare ? entries.findLast(button => {
+    const fragment = button.dataset.href.split('#')[1];
+    if (!fragment) return true;
+    const target = view.contents.document.getElementById(fragment);
+    return target && compare.compare(view.contents.cfiFromNode(target), location.start.cfi) <= 0;
+  }) || entries[0] : entries[0];
+  if (current !== previous) {
+    previous?.removeAttribute('aria-current');
+    current?.setAttribute('aria-current', 'location');
   }
   const sections = readingSections(currentBook);
   const index = sections.findIndex(section => section.index === location.start.index);
   progress.textContent = index >= 0 ? `Chapter ${index + 1} of ${sections.length}` : 'Book';
-  updateBookProgress(currentBook, currentLocation);
   updateControls();
   if (!busy) {
     stableCfi = location.start.cfi;
     try { localStorage.setItem(positionKey, location.start.cfi); } catch (e) { /* Storage is optional. */ }
-  }
-}
-
-function updateBookProgress(currentBook, currentLocation) {
-  if (book !== currentBook || !currentLocation?.start) return;
-  const sections = readingSections(currentBook);
-  const index = sections.findIndex(section => section.index === currentLocation.start.index);
-  const displayed = currentLocation.start.displayed;
-  const chapterFraction = Math.max(0, (displayed.page - 1) / Math.max(1, displayed.total));
-  let fraction = (Math.max(0, index) + chapterFraction) / Math.max(1, sections.length);
-  if (currentBook.locations.length() > 1) {
-    fraction = currentBook.locations.percentageFromCfi(currentLocation.start.cfi);
-  }
-  if (currentLocation.atStart) fraction = 0;
-  else if (currentLocation.atEnd) fraction = 1;
-  fraction = Math.max(0, Math.min(1, fraction || 0));
-  progressFill.style.transform = `scaleX(${fraction})`;
-  bookProgress.setAttribute('aria-valuenow', String(Math.round(fraction * 1000) / 10));
-  bookProgress.setAttribute('aria-valuetext', progress.textContent || 'Reading progress');
-}
-
-async function indexBookProgress(currentBook) {
-  const locations = [];
-  for (const section of readingSections(currentBook)) {
-    if (book !== currentBook) return;
-    const contents = await section.load(currentBook.load.bind(currentBook));
-    if (book !== currentBook) return;
-    locations.push(...currentBook.locations.parse(contents, section.cfiBase, 1000));
-    // Keep in-flight/visible sections intact; release indexing-only documents as we go.
-    if (!rendition.views().all().some(view => view.section === section)) section.unload();
-    await new Promise(resolve => setTimeout(resolve, 0));
-  }
-  if (book === currentBook && locations.length > 1) {
-    currentBook.locations.load(locations);
-    updateBookProgress(currentBook, location);
   }
 }
 
@@ -394,6 +373,10 @@ async function display(target) {
       await new Promise(resolve => requestAnimationFrame(resolve));
       current.views().all().forEach(view => { if (view.contents) view.expand(); });
       await settleLayout(current);
+      if (reader.dataset.layout !== 'scroll') {
+        if (target) await current.display(target);
+        return;
+      }
       // Reapply the target after publisher text has been restyled and neighboring chapters sized.
       if (target) await current.display(target);
       await settleLayout(current);
@@ -416,7 +399,8 @@ function alignReadingTarget(current, target) {
   if (!view) return;
   const offset = view.contents.locationOf(target);
   // Use chapter-local coordinates after adjacent chapters have finished expanding.
-  current.manager.container.scrollTop = view.element.offsetTop + offset.top;
+  // Keep the target visible below the toolbar and account for line-height rounding.
+  current.manager.container.scrollTop = Math.max(0, view.element.offsetTop + offset.top - 64);
 }
 
 async function settleLayout(current) {
@@ -431,6 +415,58 @@ async function settleLayout(current) {
   }
 }
 
+function createReadingRendition(currentBook) {
+  lastWidth = viewport.clientWidth;
+  lastHeight = viewport.clientHeight;
+  const paged = layout !== 'scroll';
+  const metadata = currentBook.packaging.metadata;
+  reader.dataset.layout = layout;
+  hint.textContent = paged ? 'Click either side or use the arrow keys to turn pages. Click the center to toggle the toolbar.' : 'Scroll to read. Click the center to toggle the toolbar.';
+  rendition = currentBook.renderTo(viewport, {
+    width: lastWidth,
+    height: lastHeight,
+    spread: layout === 'spread' ? 'both' : 'none',
+    minSpreadWidth: 680,
+    manager: paged ? 'default' : 'continuous',
+    flow: paged ? 'paginated' : 'scrolled-continuous',
+    gap: paged ? undefined : 0,
+    allowScriptedContent: false,
+    allowPopups: false,
+  });
+  rendition.hooks.content.register(contents => {
+    if (book !== currentBook) return;
+    contentFonts(contents);
+    styleContents(contents);
+    scaleContents(contents);
+  });
+  if (!paged) rendition.on('started', () => {
+    const manager = rendition.manager;
+    const moveTo = manager.moveTo.bind(manager);
+    // EPUB.js supplies window-relative iframe coordinates; this reader sits below the header.
+    manager.moveTo = offset => {
+      const bounds = manager.container.getBoundingClientRect();
+      moveTo({ top: offset.top - bounds.top, left: offset.left - bounds.left });
+    };
+  });
+  if (!paged) rendition.on('attached', () => {
+    const manager = rendition.manager;
+    // A resize can leave a silent-scroll flag set; idle scrolling must still report progress
+    // and load neighboring chapters. Capture runs before the library's scroll listener.
+    manager.container.addEventListener('scroll', () => {
+      if (book === currentBook && !busy) manager.ignore = false;
+    }, { capture: true, passive: true });
+  });
+  applyTheme();
+  rendition.on('relocated', currentLocation => updateLocation(currentBook, currentLocation));
+  rendition.on('keydown', handleKeydown);
+  rendition.on('click', handlePageClick);
+  rendition.on('rendered', (section, view) => {
+    view.iframe?.setAttribute('title', metadata.title || 'EPUB book');
+    // Leave room to align the last chapter at the top even when it is shorter than the screen.
+    if (!paged && section.index === readingSections(currentBook).at(-1)?.index) view.element.classList.add('epub-final-section');
+  });
+}
+
 async function openBook(file) {
   if (busy) return;
   showError();
@@ -442,8 +478,8 @@ async function openBook(file) {
   if (sizeError) { showError(sizeError); return; }
 
   resetBook();
+  currentFile = file;
   setBusy(true);
-  enterFullscreen();
   setToolStatus('epub', `Opening ${file.name}…`);
   try {
     const data = await file.arrayBuffer();
@@ -462,6 +498,7 @@ async function openBook(file) {
     document.getElementById('epubTitle').textContent = metadata.title || file.name.replace(/\.epub$/i, '');
     document.getElementById('epubAuthor').textContent = metadata.creator || '';
     positionKey = `knickknacks-epub-position:${metadata.identifier || file.name}:${file.size}`;
+    loadBookmarks();
     let savedPosition = null;
     try { savedPosition = localStorage.getItem(positionKey); } catch (e) { /* Storage is optional. */ }
     populateChapters(currentBook, currentBook.navigation);
@@ -472,51 +509,7 @@ async function openBook(file) {
     setToolStatus('epub');
     reader.hidden = false;
 
-    lastWidth = viewport.clientWidth;
-    lastHeight = viewport.clientHeight;
-    rendition = currentBook.renderTo(viewport, {
-      // ResizeObserver owns sizing so browser fullscreen changes do not race a second
-      // EPUB.js window-resize handler and restore an out-of-date reading position.
-      width: lastWidth,
-      height: lastHeight,
-      spread: 'none',
-      manager: 'continuous',
-      flow: 'scrolled-continuous',
-      gap: 0,
-      allowScriptedContent: false,
-      allowPopups: false,
-    });
-    rendition.hooks.content.register(contents => {
-      if (book !== currentBook) return;
-      contentFonts(contents);
-      styleContents(contents);
-      scaleContents(contents);
-    });
-    rendition.on('started', () => {
-      const manager = rendition.manager;
-      const moveTo = manager.moveTo.bind(manager);
-      // EPUB.js supplies window-relative iframe coordinates; this reader sits below the header.
-      manager.moveTo = offset => {
-        const bounds = manager.container.getBoundingClientRect();
-        moveTo({ top: offset.top - bounds.top, left: offset.left - bounds.left });
-      };
-    });
-    rendition.on('attached', () => {
-      const manager = rendition.manager;
-      // A resize can leave a silent-scroll flag set; idle scrolling must still report progress
-      // and load neighboring chapters. Capture runs before the library's scroll listener.
-      manager.container.addEventListener('scroll', () => {
-        if (book === currentBook && !busy) manager.ignore = false;
-      }, { capture: true, passive: true });
-    });
-    applyTheme();
-    rendition.on('relocated', currentLocation => updateLocation(currentBook, currentLocation));
-    rendition.on('keydown', handleKeydown);
-    rendition.on('rendered', (section, view) => {
-      view.iframe?.setAttribute('title', metadata.title || 'EPUB book');
-      // Leave room to align the last chapter at the top even when it is shorter than the screen.
-      if (section.index === readingSections(currentBook).at(-1)?.index) view.element.classList.add('epub-final-section');
-    });
+    createReadingRendition(currentBook);
     try {
       await display(savedPosition || undefined);
     } catch (e) {
@@ -531,9 +524,8 @@ async function openBook(file) {
       file,
     });
     await refreshRecentBooks();
-    indexBookProgress(currentBook).catch(() => {});
     setToolStatus('epub');
-    if (!tab.hidden) viewport.focus({ preventScroll: true });
+    if (!tab.hidden) focusViewport();
   } catch (e) {
     resetBook();
     setToolStatus('epub');
@@ -543,26 +535,54 @@ async function openBook(file) {
   }
 }
 
-async function navigate(action) {
+async function navigate(action, { pageTurn = false } = {}) {
   if (busy || !rendition) return;
   showError();
-  setBusy(true);
+  pageTurning = pageTurn;
+  if (pageTurn) busy = true;
+  else setBusy(true);
   try {
     await withTimeout(action(), 'This page could not be loaded. Try reopening the file.');
   } catch (e) {
     showError(`Could not move to this part of the book. ${e.message || ''}`.trim());
   } finally {
+    pageTurning = false;
     setBusy(false);
+    if (queuedPageTurn) {
+      const direction = queuedPageTurn;
+      queuedPageTurn = 0;
+      turnPage(direction);
+    }
   }
 }
 
 function handleKeydown(event) {
-  if (exitOnEscape(event)) return;
-  if (tab.hidden || reader.hidden || busy || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
-  if (event.target.closest?.('button, a, input, select, textarea, [contenteditable="true"]')) return;
+  if (event.key === 'Tab') viewport.classList.remove('programmatic-focus');
+  if (options.open && event.key === 'Escape' && !event.defaultPrevented) {
+    options.close();
+    return;
+  }
+  if (appearance.open && event.key === 'Escape') {
+    appearance.open = false;
+    appearance.querySelector('summary').focus();
+    return;
+  }
+  if (tab.hidden || reader.hidden || options.open || appearance.open || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
+  if (event.target.closest?.('input, select, textarea, [contenteditable="true"]')) return;
+  if (event.key === ' ' && event.target.closest?.('button, a')) return;
+  if (reader.dataset.layout !== 'scroll') {
+    const direction = { ArrowLeft: -1, ArrowRight: 1, PageUp: -1, PageDown: 1, ' ': event.shiftKey ? -1 : 1 }[event.key];
+    if (direction) {
+      event.preventDefault();
+      turnPage(direction);
+    }
+    return;
+  }
   const scroller = viewport.querySelector('.epub-container');
   if (!scroller) return;
   const distance = {
+    ArrowLeft: -scroller.clientHeight * .9,
+    ArrowRight: scroller.clientHeight * .9,
     ArrowDown: 64,
     ArrowUp: -64,
     PageDown: scroller.clientHeight * .9,
@@ -572,6 +592,56 @@ function handleKeydown(event) {
   if (distance === undefined) return;
   event.preventDefault();
   scroller.scrollBy({ top: distance });
+}
+
+function turnPage(direction) {
+  if (pageTurning) {
+    queuedPageTurn = direction;
+    return;
+  }
+  if (!rendition || busy) return;
+  const rtl = book.packaging.metadata.direction === 'rtl';
+  const forward = direction * (rtl ? -1 : 1) > 0;
+  navigate(async () => {
+    const current = rendition;
+    const container = current.manager.container;
+    const previousOffset = container.scrollLeft;
+    const previousView = current.views().first();
+    await (forward ? current.next() : current.prev());
+    if (rendition !== current || reducedMotion.matches) return;
+    const nextView = current.views().first();
+    const distance = previousView === nextView
+      ? container.scrollLeft - previousOffset
+      : direction * container.clientWidth;
+    if (!distance || !nextView?.element) return;
+    pageSlide?.cancel();
+    pageSlide = nextView.element.animate(
+      [{ transform: 'translateX(' + distance + 'px)' }, { transform: 'translateX(0)' }],
+      { duration: 390, easing: 'cubic-bezier(.32, .1, .25, 1)' },
+    );
+    try { await pageSlide.finished; } catch (e) { /* The book or animation was replaced. */ }
+  }, { pageTurn: true });
+}
+
+function handlePageClick(event) {
+  if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (options.open) {
+    options.close();
+    return;
+  }
+  if (appearance.open) {
+    appearance.open = false;
+    return;
+  }
+  if (event.target.closest?.('a, button, input, select, textarea') || event.view?.getSelection()?.toString()) return;
+  const frameLeft = event.view?.frameElement?.getBoundingClientRect().left || 0;
+  const bounds = viewport.getBoundingClientRect();
+  const horizontal = (event.clientX + frameLeft - bounds.left) / bounds.width;
+  if (horizontal >= .37 && horizontal <= .63) {
+    if (toolbar.classList.toggle('is-hidden')) focusViewport();
+    return;
+  }
+  if (reader.dataset.layout !== 'scroll') turnPage(horizontal < .5 ? -1 : 1);
 }
 
 function changeFont(amount) {
@@ -596,11 +666,12 @@ function reflowText() {
 }
 
 wireDropzone(dropzone, document.getElementById('epubFileInput'), document.getElementById('epubBrowseBtn'), files => openBook(files[0]));
-chapters.addEventListener('change', () => {
-  if (!chapters.value) return;
-  const target = chapters.value;
-  setOptionsOpen(false, false);
-  viewport.focus({ preventScroll: true });
+chapters.addEventListener('click', event => {
+  const chapter = event.target.closest('button[data-href]');
+  if (!chapter || busy) return;
+  const target = chapter.dataset.href;
+  options.close();
+  focusViewport();
   navigate(() => display(target));
 });
 fontFamily.addEventListener('change', () => {
@@ -622,48 +693,326 @@ alignment.addEventListener('change', () => {
 });
 smaller.addEventListener('click', () => changeFont(-10));
 larger.addEventListener('click', () => changeFont(10));
-fullscreen.addEventListener('click', () => {
-  setOptionsOpen(false, false);
-  syncLocation();
-  if (tab.classList.contains('epub-fullscreen')) exitFullscreen();
-  else enterFullscreen();
-  viewport.focus({ preventScroll: true });
+async function changeLayout(nextLayout) {
+  if (busy || !rendition || nextLayout === layout) return;
+  const target = stableCfi || location?.start.cfi;
+  const previous = layout;
+  layout = nextLayout;
+  pendingResize = null;
+  resizeAnchor = '';
+  await navigate(async () => {
+    rendition.destroy();
+    try {
+      createReadingRendition(book);
+      await display(target);
+    } catch (error) {
+      rendition?.destroy();
+      layout = previous;
+      createReadingRendition(book);
+      await display(target);
+      throw error;
+    }
+    try { localStorage.setItem(LAYOUT_KEY, layout); } catch (e) { /* Storage is optional. */ }
+  });
+  focusViewport();
+}
+layoutButton.addEventListener('click', () => {
+  const next = { scroll: 'single', single: 'spread', spread: 'scroll' };
+  changeLayout(next[layout]);
 });
-optionsToggle.addEventListener('click', () => setOptionsOpen(true));
-optionsClose.addEventListener('click', () => setOptionsOpen(false));
-optionsBackdrop.addEventListener('click', () => setOptionsOpen(false));
-options.addEventListener('keydown', event => {
-  if (event.key !== 'Tab') return;
-  const controls = options.querySelectorAll('button:not(:disabled), select:not(:disabled), input:not(:disabled)');
-  const first = controls[0], last = controls[controls.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
+function openOptions(trigger, panel) {
+  appearance.open = false;
+  if (options.open && options.dataset.panel === panel) {
+    options.close();
+    return;
   }
+  if (options.open && options.dataset.panel === 'search') searchGeneration++;
+  options.dataset.panel = panel;
+  optionsTitle.textContent = panel === 'contents' ? 'Table of contents' : 'Search';
+  searchPanel.hidden = panel !== 'search';
+  contentsToggle.setAttribute('aria-expanded', String(panel === 'contents'));
+  searchToggle.setAttribute('aria-expanded', String(panel === 'search'));
+  if (!options.open) {
+    trigger.focus({ preventScroll: true });
+    options.show();
+  }
+  if (panel === 'contents') {
+    const chapter = currentChapter() || chapters.querySelector('button');
+    if (chapter) {
+      chapter.focus({ preventScroll: true });
+      const item = chapter.parentElement;
+      chapters.scrollTop = item.offsetTop + (item.offsetHeight - chapters.clientHeight) / 2;
+    }
+  }
+  if (panel === 'search') searchInput.focus({ preventScroll: true });
+}
+contentsToggle.addEventListener('click', () => openOptions(contentsToggle, 'contents'));
+searchToggle.addEventListener('click', () => openOptions(searchToggle, 'search'));
+document.addEventListener('pointerdown', event => {
+  if (appearance.open && !appearance.contains(event.target)) appearance.open = false;
+  if (options.open && !options.contains(event.target) && !contentsToggle.contains(event.target) && !searchToggle.contains(event.target)) options.close();
 });
-document.addEventListener('keydown', exitOnEscape);
-document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement === tab) {
-    nativeFullscreen = true;
-    // A fast failed load or close can finish before the browser's fullscreen request.
-    if (!tab.classList.contains('epub-fullscreen')) exitFullscreen();
-  } else if (nativeFullscreen) {
-    nativeFullscreen = false;
-    setFullscreenLayout(false);
+optionsClose.addEventListener('click', () => options.close());
+options.addEventListener('close', () => {
+  if (options.open) return;
+  contentsToggle.setAttribute('aria-expanded', 'false');
+  searchToggle.setAttribute('aria-expanded', 'false');
+  if (options.dataset.panel === 'search') searchGeneration++;
+});
+window.addEventListener('hashchange', () => {
+  if (tab.hidden) {
+    options.close();
+    appearance.open = false;
   }
 });
 close.addEventListener('click', () => {
+  if (busy) return;
+  const previousBook = recentList.querySelector('button[data-open-book="' + CSS.escape(positionKey) + '"]');
   syncLocation();
   resetBook();
   showError();
   setToolStatus('epub');
   setBusy(false);
-  document.getElementById('epubBrowseBtn').focus();
+  (previousBook || document.getElementById('epubBrowseBtn')).focus();
 });
-viewport.addEventListener('keydown', handleKeydown);
+document.addEventListener('keydown', handleKeydown);
+viewport.addEventListener('click', handlePageClick);
+function bookmarkPrefix() {
+  return 'knickknacks-epub-bookmark:' + encodeURIComponent(positionKey) + ':';
+}
+
+function bookmarkKey(cfi) {
+  return bookmarkPrefix() + encodeURIComponent(cfi);
+}
+
+function activeBookmark() {
+  if (!location?.start?.cfi || !location?.end?.cfi || !window.ePub?.CFI) return null;
+  const compare = new window.ePub.CFI();
+  return bookmarks.find(item => {
+    try {
+      return compare.compare(location.start.cfi, item.cfi) <= 0 && compare.compare(item.cfi, location.end.cfi) <= 0;
+    } catch (error) {
+      return false;
+    }
+  }) || null;
+}
+
+function updateBookmarkState() {
+  const marked = Boolean(activeBookmark());
+  bookmarkButton.setAttribute('aria-pressed', String(marked));
+  const title = marked ? 'Remove bookmark' : 'Bookmark this page';
+  bookmarkButton.title = title;
+}
+
+function renderBookmarks() {
+  bookmarkList.replaceChildren();
+  bookmarkSection.hidden = bookmarks.length === 0;
+  for (const item of bookmarks) {
+    const row = document.createElement('li');
+    const open = document.createElement('button');
+    const chapter = document.createElement('span');
+    const excerpt = document.createElement('span');
+    const remove = document.createElement('button');
+    open.type = remove.type = 'button';
+    open.className = 'epub-bookmark-open';
+    open.dataset.bookmarkAction = 'open';
+    open.dataset.cfi = item.cfi;
+    chapter.textContent = item.chapter || 'Book';
+    excerpt.textContent = item.excerpt || 'Saved place';
+    open.append(chapter, excerpt);
+    remove.className = 'epub-bookmark-remove';
+    remove.dataset.bookmarkAction = 'remove';
+    remove.dataset.cfi = item.cfi;
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', 'Remove bookmark: ' + (item.chapter || 'Book') + (item.excerpt ? ', ' + item.excerpt : ''));
+    row.append(open, remove);
+    bookmarkList.append(row);
+  }
+}
+
+function loadBookmarks() {
+  if (!positionKey) return;
+  const prefix = bookmarkPrefix();
+  const found = new Map();
+  try {
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith(prefix) || sessionRemovedBookmarks.has(key)) continue;
+      try {
+        const item = JSON.parse(localStorage.getItem(key));
+        if (typeof item?.cfi !== 'string' || !item.cfi.startsWith('epubcfi(')) continue;
+        const parsed = new window.ePub.CFI(item.cfi);
+        if (!parsed.path?.steps || !Number.isFinite(parsed.spinePos)) continue;
+        found.set(item.cfi, item);
+      } catch (error) { /* Ignore malformed saved bookmarks. */ }
+    }
+  } catch (error) { /* Session bookmarks still work without storage. */ }
+  for (const [key, item] of sessionBookmarks) {
+    if (key.startsWith(prefix) && !sessionRemovedBookmarks.has(key)) found.set(item.cfi, item);
+  }
+  const compare = new window.ePub.CFI();
+  bookmarks = Array.from(found.values()).sort((a, b) => compare.compare(a.cfi, b.cfi));
+  renderBookmarks();
+  updateBookmarkState();
+}
+
+function removeBookmark(item) {
+  const key = bookmarkKey(item.cfi);
+  sessionBookmarks.delete(key);
+  try {
+    localStorage.removeItem(key);
+    sessionRemovedBookmarks.delete(key);
+  } catch (error) {
+    sessionRemovedBookmarks.add(key);
+    bookmarkNotice.textContent = 'Bookmark removed for this session.';
+    bookmarkNotice.hidden = false;
+  }
+  loadBookmarks();
+}
+
+function bookmarkExcerpt(cfi) {
+  const view = rendition.views().all().find(item => item.section.index === location.start.index);
+  if (!view?.contents) return '';
+  try {
+    const range = view.contents.range(cfi);
+    const node = range.startContainer;
+    const text = node.nodeType === Node.TEXT_NODE ? node.textContent.slice(range.startOffset) : node.textContent;
+    return text.replace(/\s+/g, ' ').trim().slice(0, 120);
+  } catch (error) {
+    return '';
+  }
+}
+
+function toggleBookmark() {
+  if (busy || !rendition || !positionKey) return;
+  syncLocation();
+  if (!location?.start?.cfi) return;
+  const existing = activeBookmark();
+  if (existing) {
+    removeBookmark(existing);
+    return;
+  }
+  const item = {
+    cfi: location.start.cfi,
+    chapter: currentChapter()?.textContent || progress.textContent || 'Book',
+    excerpt: bookmarkExcerpt(location.start.cfi),
+  };
+  const key = bookmarkKey(item.cfi);
+  sessionRemovedBookmarks.delete(key);
+  try {
+    localStorage.setItem(key, JSON.stringify(item));
+    sessionBookmarks.delete(key);
+    bookmarkNotice.hidden = true;
+  } catch (error) {
+    sessionBookmarks.set(key, item);
+    bookmarkNotice.textContent = 'Bookmark saved for this session only.';
+    bookmarkNotice.hidden = false;
+  }
+  loadBookmarks();
+}
+
+bookmarkButton.addEventListener('click', toggleBookmark);
+bookmarkList.addEventListener('click', event => {
+  const button = event.target.closest('button[data-bookmark-action]');
+  if (!button || busy) return;
+  const item = bookmarks.find(mark => mark.cfi === button.dataset.cfi);
+  if (!item) return;
+  if (button.dataset.bookmarkAction === 'remove') {
+    removeBookmark(item);
+    (bookmarkList.querySelector('.epub-bookmark-open') || chapters).focus();
+    return;
+  }
+  options.close();
+  focusViewport();
+  navigate(() => display(item.cfi));
+});
+window.addEventListener('storage', event => {
+  if (positionKey && (!event.key || event.key.startsWith(bookmarkPrefix()))) loadBookmarks();
+});
+searchForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const query = searchInput.value.trim();
+  if (!query || !currentFile) return;
+  const pattern = Array.from(query.replace(/\s+/g, ' '), character =>
+    '\\^$.*+?()[]{}|'.includes(character) ? '\\' + character : character
+  ).join('');
+  const matchesQuery = new RegExp('(' + pattern + ')', 'giu');
+  const generation = ++searchGeneration;
+  const file = currentFile;
+  let searchBook;
+  let total = 0;
+  let skipped = 0;
+  searchResults.replaceChildren();
+  searchStatus.textContent = 'Searching…';
+  try {
+    const data = await file.arrayBuffer();
+    if (generation !== searchGeneration) return;
+    searchBook = window.ePub({ replacements: 'blobUrl' });
+    await searchBook.open(data, 'binary');
+    await searchBook.opened;
+    const sections = readingSections(searchBook);
+    for (const [index, section] of sections.entries()) {
+      if (generation !== searchGeneration) return;
+      try {
+        await section.load(searchBook.load.bind(searchBook));
+        if (generation !== searchGeneration) return;
+        const seen = new Set();
+        const matches = [...section.find(query), ...section.search(query)];
+        const fragment = document.createDocumentFragment();
+        for (const match of matches) {
+          if (seen.has(match.cfi)) continue;
+          seen.add(match.cfi);
+          const item = document.createElement('li');
+          const button = document.createElement('button');
+          const sectionName = document.createElement('span');
+          const excerpt = document.createElement('span');
+          button.type = 'button';
+          button.className = 'epub-search-result';
+          button.dataset.cfi = match.cfi;
+          sectionName.textContent = 'Section ' + (index + 1);
+          const pieces = match.excerpt.trim().replace(/\s+/g, ' ').split(matchesQuery);
+          pieces.forEach((piece, index) => {
+            if (index % 2 === 0) {
+              excerpt.append(piece);
+            } else {
+              const bold = document.createElement('strong');
+              bold.textContent = piece;
+              excerpt.append(bold);
+            }
+          });
+          button.append(sectionName, excerpt);
+          item.append(button);
+          fragment.append(item);
+          total++;
+          if (total >= 300) break;
+        }
+        searchResults.append(fragment);
+      } catch (error) {
+        skipped++;
+      } finally {
+        section.unload();
+      }
+      if (total >= 300) break;
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    if (generation !== searchGeneration) return;
+    const count = total === 1 ? '1 result' : total + ' results';
+    const limit = total >= 300 ? 'Showing the first 300 results.' : count + '.';
+    searchStatus.textContent = skipped ? limit + ' Some sections could not be searched.' : limit;
+  } catch (error) {
+    if (generation === searchGeneration) searchStatus.textContent = 'Could not search this book. Try again.';
+  } finally {
+    searchBook?.destroy();
+  }
+});
+searchResults.addEventListener('click', event => {
+  const result = event.target.closest('button[data-cfi]');
+  if (!result || busy) return;
+  const target = result.dataset.cfi;
+  options.close();
+  focusViewport();
+  navigate(() => display(target));
+});
 recentList.addEventListener('click', async event => {
   const button = event.target.closest('button');
   if (!button || busy) return;
